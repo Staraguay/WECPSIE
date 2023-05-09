@@ -729,9 +729,9 @@ def disconnect_db(connection):
 # main program, testing only
 if __name__ == "__main__":
 
-    db_connection = conect_to_wpsie_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+    db_connection = conect_to_wpsie_db(['localhost', 'wecpsie', 'user', 'passs'])
     add_entry_log(db_connection,2,'sebas','2020-07-12','info','lv_0','insert','2021-05-16','hola')
-    # db_connection = conect_to_wpsie_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+    # db_connection = conect_to_wpsie_db(['localhost', 'wecpsie', 'user', 'passs'])
     # list = []
     # # list2 = []
     # test = {'Razón Social - Proveedor': 'ZAMBRANO SERRANO EMILIO JOSE', 'Fecha de Invitación': '2021-04-05 20:02', 'Provincia - Cantón': 'PICHINCHA - QUITO', 'Estado actual RUP': 'Habilitado en RUP'}

@@ -93,7 +93,7 @@ def swing_index_pages(driver):
     # validate captcha search
     search_button[1].click()
 
-    db_connection = wpsedb.conect_to_wpsie_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+    db_connection = wpsedb.conect_to_wpsie_db(['localhost', 'wecpsie', 'user', 'pass'])
 
     new_pcp_count = 0
     updated_pcp_count = 0
@@ -293,7 +293,7 @@ def crawl_pcpsie_page(pcrawler):  # level 1 navigation
     """
 
     print(C+"\n[CRAWL] Fetching PCPSIE links from database...")
-    db_connection = wpsedb.conect_to_wpsie_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+    db_connection = wpsedb.conect_to_wpsie_db(['localhost', 'wecpsie', 'user', 'pass'])
 
     p_link_list = wpsedb.get_procesos_page_links(db_connection)
     links_in_plist = len(p_link_list)
@@ -386,7 +386,7 @@ def crawl_pcpsie_contrato_page(pcrawler):  # level 2 navigation
 
 
     print(C+"\n[CRAWL] Fetching PCPSIE_contrato links from database...")
-    db_connection = wpsedb.conect_to_wpsie_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+    db_connection = wpsedb.conect_to_wpsie_db(['localhost', 'wecpsie', 'user', 'pass'])
 
     c_link_list = wpsedb.get_contrato_links(db_connection)
     links_in_clist = len(c_link_list)
@@ -487,7 +487,7 @@ def crawl_pcpsie_invitacion_page(pcrawler):  # level 2 navigation
 
 
     print(C+"\n[CRAWL] Fetching PCPSIE_invitaciones links from database...")
-    db_connection = wpsedb.conect_to_wpsie_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+    db_connection = wpsedb.conect_to_wpsie_db(['localhost', 'wecpsie', 'user', 'pass'])
 
     iv_link_list = wpsedb.get_invitacion_links(db_connection)
     links_in_ivlist = len(iv_link_list)

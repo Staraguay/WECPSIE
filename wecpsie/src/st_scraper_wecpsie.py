@@ -153,7 +153,7 @@ def get_main_page_table_info(dcrawler, n_retrieve=20):
             page_label, e)
         #print(R+entry_message)
 
-        db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+        db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'user', 'pass'])
 
         wpsedb.add_entry_log(db_error_connection, '[SCRAPER]', '[SCRAPER]','', 'error', 'index', 'extrc',today, entry_message)
 
@@ -268,7 +268,7 @@ def extract_SIE_lv1(infotable):
             entry_message = "[SCRAPER] Failed to retrieve information in Information table\nError message: {}".format(e)
             #print(R + entry_message)
 
-            db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+            db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'user', 'pass'])
 
             wpsedb.add_entry_log(db_error_connection, '[SCRAPER]', '[SCRAPER]', '', 'error', 'scraper', 'extrc', today,
                                  entry_message)
@@ -332,7 +332,7 @@ def extract_SIE_lv1(infotable):
         entry_message = "[SCRAPER] Failed to retrieve information in Information table\nError message: {}".format(e)
         #print(R + entry_message)
 
-        db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+        db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'user', 'pass'])
 
         wpsedb.add_entry_log(db_error_connection, '[SCRAPER]', '[SCRAPER]', '', 'error', 'scraper', 'extrc', today,
                              entry_message)
@@ -360,7 +360,7 @@ def extract_SIE_lv1(infotable):
         entry_message = "[SCRAPER] Failed to retrieve information in Information table\nError message: {}".format(e)
         #print(R + entry_message)
 
-        db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+        db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'user', 'pass'])
 
         wpsedb.add_entry_log(db_error_connection, '[SCRAPER]', '[SCRAPER]', '', 'error', 'scraper', 'extrc', today,
                              entry_message)
@@ -386,7 +386,7 @@ def extract_SIE_lv1(infotable):
         entry_message = "[SCRAPER] Failed to retrieve information in Information table\nError message: {}".format(e)
         #print(R + entry_message)
 
-        db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+        db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'user', 'pass'])
 
         wpsedb.add_entry_log(db_error_connection, '[SCRAPER]', '[SCRAPER]', '', 'error', 'scraper', 'extrc', today,
                              entry_message)
@@ -468,7 +468,7 @@ def extract_SIE_lv2(infotable):
         entry_message = "[SCRAPER] Failed to retrieve information in Contrato Information table\nError message: {}".format(e)
         print(R + entry_message)
 
-        db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+        db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'user', 'pass'])
 
         wpsedb.add_entry_log(db_error_connection, '[SCRAPER]', '[SCRAPER]', '', 'error', 'scraper', 'extrc', today,
                              entry_message)
@@ -606,7 +606,7 @@ def extract_SIE_lv2_inv(infotable,dcrawler,n_inv=50):
             entry_message = "[SCRAPER] Failed to retrieve information in Invitation table\nError message: {}".format(e)
             #print(R + entry_message)
 
-            db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'root', 'dontara99'])
+            db_error_connection = wpsedb.conect_to_dscp_db(['localhost', 'wecpsie', 'user', 'pass'])
 
             wpsedb.add_entry_log(db_error_connection, '[SCRAPER]', '[SCRAPER]', '', 'error', 'scraper', 'extrc', today,
                                  entry_message)
