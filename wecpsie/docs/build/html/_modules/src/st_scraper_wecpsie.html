@@ -1,0 +1,846 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>src.st_scraper_wecpsie &mdash; wecpsie 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> wecpsie
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">wecpsie</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>src.st_scraper_wecpsie</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for src.st_scraper_wecpsie</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">concurrent.futures</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">selenium</span> <span class="kn">import</span> <span class="n">webdriver</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.common.by</span> <span class="kn">import</span> <span class="n">By</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.common.keys</span> <span class="kn">import</span> <span class="n">Keys</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.support</span> <span class="kn">import</span> <span class="n">expected_conditions</span> <span class="k">as</span> <span class="n">EC</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.support.wait</span> <span class="kn">import</span> <span class="n">WebDriverWait</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.support.select</span> <span class="kn">import</span> <span class="n">Select</span>
+<span class="kn">import</span> <span class="nn">d_utilities</span> <span class="k">as</span> <span class="nn">dutils</span>
+<span class="kn">import</span> <span class="nn">st_wpse_db_connection</span> <span class="k">as</span> <span class="nn">wpsedb</span>
+
+
+<span class="c1"># begin information retrieval methods</span>
+
+<span class="n">R</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[31m&#39;</span>  <span class="c1"># red</span>
+<span class="n">G</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[32m&#39;</span>  <span class="c1"># green</span>
+<span class="n">C</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[36m&#39;</span>  <span class="c1"># cyan</span>
+<span class="n">W</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[0m&#39;</span>  <span class="c1"># white</span>
+<span class="n">P</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[35m&#39;</span>  <span class="c1">#morado</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[33m&#39;</span>  <span class="c1">#amarrilo</span>
+
+
+<span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+<span class="n">today</span> <span class="o">=</span> <span class="n">now</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="get_main_page_table_info"><a class="viewcode-back" href="../../index.html#src.st_scraper_wecpsie.get_main_page_table_info">[docs]</a><span class="k">def</span> <span class="nf">get_main_page_table_info</span><span class="p">(</span><span class="n">dcrawler</span><span class="p">,</span> <span class="n">n_retrieve</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Information scraper for search result index table in: Búsqueda de Procesos de Contratación.</span>
+<span class="sd">    This function is classified as Level_Index.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dcrawler : webdriver instance to perform crawling operations.</span>
+
+<span class="sd">    n_retrieve : int, default=&quot;20&quot;</span>
+<span class="sd">        The number of rows to retrieve from the current page search table. The update module</span>
+<span class="sd">        passes this argument in order to retrieve a certain number of records (&lt;20) in the table.</span>
+<span class="sd">        The spider module uses the default argument since its goal is to retrieve all the records.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    swing_table_process_list : list,</span>
+<span class="sd">        A list containing the information scrapped from the n_retrieve records in the current page.</span>
+<span class="sd">        Every element in the list is a dictionary that represents a PCPSIE indexed.</span>
+<span class="sd">        The dictionary has the following example structure:</span>
+
+<span class="sd">            {&#39;Código&#39;: &#39;GGE-CJU-2020-020&#39;</span>
+<span class="sd">             &#39;Link&#39;: &#39;https://link-to-PSIE&#39;,</span>
+<span class="sd">             &#39;Entidad Contratante&#39;: &#39;Entidad1&#39;,</span>
+<span class="sd">             &#39;Objeto del proceso&#39;: &#39;Desc1&#39;,</span>
+<span class="sd">             &#39;Estado del proceso&#39;: &#39;Est1&#39;,</span>
+<span class="sd">             &#39;Provincia/Cantón&#39;: &#39;Guayas/Guayaquil&#39;,</span>
+<span class="sd">             &#39;Presupuesto Referencial&#39;: &#39;$66,340.00&#39;,</span>
+<span class="sd">             &#39;Fecha de Publicación&#39;: &#39;2020-10-10 13:00:00&#39;,</span>
+<span class="sd">             &#39;Opciones&#39;: &#39;Opc1&#39;}</span>
+
+<span class="sd">    current_last_element : int,</span>
+<span class="sd">        The last element scrapped from the search result table. This number is found from the</span>
+<span class="sd">        TABLE &quot;Procesos del 1 al 20 de 870&quot; at the bottom of the page.</span>
+
+<span class="sd">    last_element : int,</span>
+<span class="sd">        The last element (PCPSIE) from the search result table. This number is found from the</span>
+<span class="sd">        TABLE &quot;Procesos del 1 al 20 de 870&quot; at the bottom of the page.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Any error, warning, info encountered during the function operations will be logged in WECPSIE database.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from selenium import webdriver</span>
+<span class="sd">    &gt;&gt;&gt; dcrawler = webdriver.Chrome(Driver_PATH)</span>
+<span class="sd">    &gt;&gt;&gt; search_table_dict, current_last_element, last_element = get_main_page_table_info(dcrawler)</span>
+<span class="sd">    &gt;&gt;&gt; search_table_dict, current_last_element, last_element = get_main_page_table_info(dcrawler, 10)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">page_label</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+
+        <span class="n">info_table</span> <span class="o">=</span> <span class="n">WebDriverWait</span><span class="p">(</span><span class="n">dcrawler</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">until</span><span class="p">(</span><span class="n">EC</span><span class="o">.</span><span class="n">presence_of_element_located</span><span class="p">((</span><span class="n">By</span><span class="o">.</span><span class="n">ID</span><span class="p">,</span><span class="s2">&quot;divProcesos&quot;</span><span class="p">)))</span>
+
+        <span class="c1"># extract index of the current page</span>
+        <span class="n">page_index_labels</span> <span class="o">=</span> <span class="n">dcrawler</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;divProcesos&quot;]/table[2]/tbody/tr[1]/td&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+        <span class="n">current_last_element</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">page_index_labels</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+        <span class="n">last_element</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">page_index_labels</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span>
+
+        <span class="n">page_label</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">page_index_labels</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;[SCRAPER] Extranting table info for: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">page_label</span><span class="p">))</span>
+
+        <span class="n">table_len</span> <span class="o">=</span> <span class="n">dcrawler</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;divProcesos&quot;]/table[1]&#39;</span><span class="p">)</span>
+
+        <span class="n">table_rows</span> <span class="o">=</span> <span class="n">table_len</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;tr&quot;</span><span class="p">)</span>
+        <span class="n">swing_table_process_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">table_headers</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">row_index</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">table_rows</span><span class="p">:</span>
+
+            <span class="n">process_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">if</span> <span class="n">row_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">header</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;td&quot;</span><span class="p">):</span>
+                    <span class="n">table_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">header</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="n">col_index</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">resolucion_id</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+                <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;td&quot;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">col_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+
+                        <span class="k">if</span> <span class="n">cell</span><span class="o">.</span><span class="n">text</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">process_dict</span><span class="p">:</span>
+
+                            <span class="n">resolucion_id</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">text</span>
+                            <span class="n">process_dict</span><span class="p">[</span><span class="n">table_headers</span><span class="p">[</span><span class="n">col_index</span><span class="p">]]</span> <span class="o">=</span>  <span class="n">resolucion_id</span>
+                            <span class="n">process_dict</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">find_element_by_tag_name</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get_attribute</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">)</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">col_name</span> <span class="o">=</span> <span class="n">table_headers</span><span class="p">[</span><span class="n">col_index</span><span class="p">]</span>
+
+                        <span class="k">if</span> <span class="n">col_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">process_dict</span><span class="p">:</span>
+                            <span class="n">process_dict</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">text</span>
+
+                    <span class="n">col_index</span> <span class="o">+=</span><span class="mi">1</span>
+
+                <span class="n">swing_table_process_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">process_dict</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">row_index</span> <span class="o">==</span> <span class="n">n_retrieve</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+            <span class="n">row_index</span> <span class="o">+=</span><span class="mi">1</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[SCRAPER] Information in table for </span><span class="si">{}</span><span class="s2"> retrieved succesfully.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">page_label</span><span class="p">))</span>
+        <span class="c1"># print(swing_table_process_list)</span>
+
+
+        <span class="k">return</span> <span class="n">swing_table_process_list</span><span class="p">,</span> <span class="n">current_last_element</span><span class="p">,</span> <span class="n">last_element</span>
+
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+
+        <span class="c1"># # LOG area</span>
+        <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[SCRAPER] Failed to retrieve information in index_table for </span><span class="si">{}</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">page_label</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="c1">#print(R+entry_message)</span>
+
+        <span class="n">db_error_connection</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">conect_to_dscp_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="s1">&#39;extrc&#39;</span><span class="p">,</span><span class="n">today</span><span class="p">,</span> <span class="n">entry_message</span><span class="p">)</span>
+
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;[SCRAPER] Failed to retrieve information in index_table for </span><span class="si">{}</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">page_label</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span></div>
+        <span class="c1">#print(e)</span>
+
+
+<div class="viewcode-block" id="extract_SIE_lv1"><a class="viewcode-back" href="../../index.html#src.st_scraper_wecpsie.extract_SIE_lv1">[docs]</a><span class="k">def</span> <span class="nf">extract_SIE_lv1</span><span class="p">(</span><span class="n">infotable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Information scraper for tables &quot;Descripción del Proceso de Contratación&quot; and &quot;Fechas de Control&quot; in:</span>
+<span class="sd">    Información Proceso Contratacion. This function is classified as Level_1.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    infotable : WebObjectInstance</span>
+<span class="sd">        Web object that represents the table on which all the</span>
+<span class="sd">        information in this page is displayed, including all visible sections.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    info_SIE_dict : dict,</span>
+<span class="sd">        A dictionary containing the information scrapped from the two table mentioned.</span>
+<span class="sd">        The dictionary has the following example structure:</span>
+
+<span class="sd">            {</span>
+<span class="sd">             &#39;Entidad&#39;:&#39;Enti&#39;,</span>
+<span class="sd">             &#39;Objeto&#39;:&#39;Desc1&#39;,</span>
+<span class="sd">             &#39;Código&#39;:&#39;SIE-MREMH-001-2021&#39;,</span>
+<span class="sd">             &#39;Compra&#39;:&#39;tipo1&#39;,</span>
+<span class="sd">             &#39;presupuesto&#39;:&#39;Pres&#39;,</span>
+<span class="sd">             &#39;Tipo&#39;:&#39;Estatus&#39;,</span>
+<span class="sd">             &#39;Plazo&#39;:&#39;Estatus&#39;,</span>
+<span class="sd">             &#39;Funcionario:&#39;Funci&#39;,</span>
+<span class="sd">             &#39;Estado&#39;:&#39;Estatus&#39;,</span>
+<span class="sd">             &#39;Fecha_publicacion&#39;2021-10-10 13:00:00&#39;,</span>
+<span class="sd">             &#39;Fecha_puja&#39;2021-10-10 13:00:00&#39;,</span>
+<span class="sd">             &#39;Fecha_adjudicacion&#39;2021-10-10 13:00:00&#39;</span>
+<span class="sd">             &#39;Invitacion: https://link/invitaciones&#39;,</span>
+<span class="sd">             &#39;Contrato: https://link/contrato}</span>
+
+<span class="sd">    autoridades_list : list,</span>
+<span class="sd">        A list containing various dictionaries each one with the information scrapped from the table Autoridades.</span>
+<span class="sd">        Each dictionary has the following example structure:</span>
+
+<span class="sd">            {</span>
+<span class="sd">             &#39;Cedula&#39;:&#39;172568566&#39;,</span>
+<span class="sd">             &#39;Nombre&#39;:&#39;Nombre&#39;,</span>
+<span class="sd">             &#39;Cargo&#39;:&#39;Autoridad&#39;,</span>
+<span class="sd">             &#39;Origen&#39;:&#39;Nacional&#39;}</span>
+
+<span class="sd">    comision_list : list,</span>
+<span class="sd">        A list containing various dictionaries each one with the information scrapped from the table Comision Tecnica if exist.</span>
+<span class="sd">        Each dictionary has the following example structure:</span>
+<span class="sd">            {</span>
+<span class="sd">             &#39;Cedula&#39;:&#39;1726859645&#39;,</span>
+<span class="sd">             &#39;Nombre&#39;:&#39;Nombre&#39;,</span>
+<span class="sd">             &#39;Funcion&#39;:&#39;Gerente&#39;}</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+
+<span class="sd">    Please refer to the documentation and implementation of the function *save_SIE_info* in the database module</span>
+<span class="sd">    to see which fields the dictionary might not contain.</span>
+
+<span class="sd">    Any error, warning, info encountered during the function operations will be logged in WECPSIE database.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from selenium import webdriver</span>
+<span class="sd">    &gt;&gt;&gt; import st_scraper_wecpsie as dextract</span>
+<span class="sd">    &gt;&gt;&gt; pcrawler = webdriver.Chrome(Driver_PATH)</span>
+<span class="sd">    &gt;&gt;&gt; infotable = WebDriverWait(pcrawler, 5).until(EC.presence_of_element_located((By.ID, &#39;ladoDer&#39;)))</span>
+<span class="sd">    &gt;&gt;&gt; sie_dict,list_autoridades, list_comision = dextract.extract_SIE_lv1(infotable)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">info_SIE_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">autoridades_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">comision_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">titles</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Entidad&quot;</span><span class="p">,</span><span class="s2">&quot;Objeto&quot;</span><span class="p">,</span><span class="s2">&quot;Codigo&quot;</span><span class="p">,</span><span class="s2">&quot;Compra&quot;</span><span class="p">,</span><span class="s2">&quot;Presupuesto&quot;</span><span class="p">,</span><span class="s2">&quot;Tipo&quot;</span><span class="p">,</span><span class="s2">&quot;Plazo&quot;</span><span class="p">,</span><span class="s2">&quot;Funcionario&quot;</span><span class="p">,</span><span class="s2">&quot;Estado&quot;</span><span class="p">]</span>
+    <span class="n">titles_table2</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Cedula&quot;</span><span class="p">,</span><span class="s2">&quot;Nombre&quot;</span><span class="p">,</span><span class="s2">&quot;Cargo&quot;</span><span class="p">,</span><span class="s2">&quot;Origen&quot;</span><span class="p">]</span>
+    <span class="n">titles_table3</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Cedula&quot;</span><span class="p">,</span><span class="s2">&quot;Nombre&quot;</span><span class="p">,</span><span class="s2">&quot;Funcion&quot;</span><span class="p">]</span>
+    <span class="n">excluidos</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Tipo de Contratación:&quot;</span><span class="p">,</span><span class="s2">&quot;Forma de Pago:&quot;</span><span class="p">,</span><span class="s2">&quot;Autoridades:&quot;</span><span class="p">,</span><span class="s2">&quot;Miembros Comisión Técnica&quot;</span><span class="p">,</span><span class="s2">&quot;Vigencia de Oferta:&quot;</span><span class="p">,</span><span class="s2">&quot;Descripción:&quot;</span><span class="p">,</span><span class="s2">&quot;Variación mínima de la Oferta durante la Puja:&quot;</span><span class="p">,</span><span class="s2">&quot;Estado en el cual finalizó el Proceso&quot;</span><span class="p">]</span>
+
+    <span class="n">tabla</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_element_by_id</span><span class="p">(</span><span class="s1">&#39;one-column-emphasis&#39;</span><span class="p">)</span>
+
+    <span class="n">filas</span> <span class="o">=</span> <span class="n">tabla</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;tr&quot;</span><span class="p">)</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">filas</span><span class="p">:</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">titulo</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">find_element_by_tag_name</span><span class="p">(</span><span class="s2">&quot;th&quot;</span><span class="p">)</span>
+            <span class="n">descripcion</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">find_element_by_tag_name</span><span class="p">(</span><span class="s1">&#39;td&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">titulo</span><span class="o">.</span><span class="n">text</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">excluidos</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">titulo</span><span class="o">.</span><span class="n">text</span> <span class="o">!=</span> <span class="s2">&quot;Comisión Técnica:&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">titulo</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="s1">&#39;Presupuesto Referencial Total (Sin Iva):&#39;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">descripcion</span><span class="o">.</span><span class="n">text</span> <span class="o">!=</span> <span class="s1">&#39;NO DISPONIBLE&#39;</span><span class="p">:</span>
+                            <span class="n">presupuesto_str</span> <span class="o">=</span> <span class="n">descripcion</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+                            <span class="n">presupuesto_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">presupuesto_str</span><span class="p">))</span>
+                            <span class="n">info_SIE_dict</span><span class="p">[</span><span class="n">titles</span><span class="p">[</span><span class="n">count</span><span class="p">]]</span> <span class="o">=</span> <span class="n">presupuesto_value</span>
+                            <span class="n">count</span> <span class="o">+=</span><span class="mi">1</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">info_SIE_dict</span><span class="p">[</span><span class="n">titles</span><span class="p">[</span><span class="n">count</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                            <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1">#print(descripcion.text)</span>
+                        <span class="n">info_SIE_dict</span><span class="p">[</span><span class="n">titles</span><span class="p">[</span><span class="n">count</span><span class="p">]]</span> <span class="o">=</span> <span class="n">descripcion</span><span class="o">.</span><span class="n">text</span>
+                        <span class="n">count</span><span class="o">+=</span><span class="mi">1</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[SCRAPER] Failed to retrieve information in Information table</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="c1">#print(R + entry_message)</span>
+
+            <span class="n">db_error_connection</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">conect_to_dscp_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+
+            <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;scraper&#39;</span><span class="p">,</span> <span class="s1">&#39;extrc&#39;</span><span class="p">,</span> <span class="n">today</span><span class="p">,</span>
+                                 <span class="n">entry_message</span><span class="p">)</span>
+
+            <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="n">R</span> <span class="o">+</span> <span class="s2">&quot;[SCRAPER] Failed to retrieve information in Information table</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="k">pass</span>
+
+    <span class="c1">#Obtencion de datos tabla Autoridades y Comision tecnica</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">tabla_fun_comision</span> <span class="o">=</span>  <span class="n">infotable</span><span class="o">.</span><span class="n">find_elements_by_id</span><span class="p">(</span><span class="s1">&#39;rounded-corner&#39;</span><span class="p">)</span>
+        <span class="n">aux</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tabla_fun_comision</span><span class="p">)</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">aux</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+
+            <span class="n">tabla_funcionarios</span> <span class="o">=</span> <span class="n">tabla_fun_comision</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">filas_fun</span> <span class="o">=</span> <span class="n">tabla_funcionarios</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;tr&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">filas_fun</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">counter</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">colum</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;td&quot;</span><span class="p">)</span>
+                    <span class="n">autoridades_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">colums</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">colum</span><span class="p">):</span>
+                        <span class="n">autoridades_dict</span><span class="p">[</span><span class="n">titles_table2</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">colums</span><span class="o">.</span><span class="n">text</span>
+                    <span class="n">autoridades_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">autoridades_dict</span><span class="p">)</span>
+                    <span class="n">counter</span><span class="o">+=</span><span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">pass</span>
+        <span class="k">elif</span> <span class="n">aux</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+
+            <span class="n">tabla_funcionarios</span> <span class="o">=</span> <span class="n">tabla_fun_comision</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">tabla_comision</span> <span class="o">=</span> <span class="n">tabla_fun_comision</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">filas_fun</span> <span class="o">=</span> <span class="n">tabla_funcionarios</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;tr&quot;</span><span class="p">)</span>
+            <span class="n">filas_com</span> <span class="o">=</span> <span class="n">tabla_comision</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;tr&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">filas_fun</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">counter</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">colum</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;td&quot;</span><span class="p">)</span>
+                    <span class="n">autoridades_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">colums</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">colum</span><span class="p">):</span>
+                        <span class="n">autoridades_dict</span><span class="p">[</span><span class="n">titles_table2</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">colums</span><span class="o">.</span><span class="n">text</span>
+                    <span class="n">autoridades_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">autoridades_dict</span><span class="p">)</span>
+                    <span class="n">counter</span><span class="o">+=</span><span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">pass</span>
+            <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">filas_com</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">counter</span><span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">colum</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;td&quot;</span><span class="p">)</span>
+                    <span class="n">comision_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">colums</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">colum</span><span class="p">):</span>
+                        <span class="n">comision_dict</span><span class="p">[</span><span class="n">titles_table3</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">colums</span><span class="o">.</span><span class="n">text</span>
+                    <span class="n">comision_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">comision_dict</span><span class="p">)</span>
+                    <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">pass</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[SCRAPER] Failed to retrieve information in Information table</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="c1">#print(R + entry_message)</span>
+
+        <span class="n">db_error_connection</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">conect_to_dscp_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;scraper&#39;</span><span class="p">,</span> <span class="s1">&#39;extrc&#39;</span><span class="p">,</span> <span class="n">today</span><span class="p">,</span>
+                             <span class="n">entry_message</span><span class="p">)</span>
+
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;[SCRAPER] Information in table retrieved fail.&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+
+    <span class="c1">#Obtencion de fechas</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">tab_fechas</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_element_by_id</span><span class="p">(</span><span class="s2">&quot;tab2&quot;</span><span class="p">)</span>
+        <span class="n">tab_fechas</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">fecha_publicacion</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;one-column-emphasis&quot;]/tbody/tr[1]/td[1]&#39;</span><span class="p">)</span>
+        <span class="n">fecha_subasta</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;one-column-emphasis&quot;]/tbody/tr[8]/td[1]&#39;</span><span class="p">)</span>
+        <span class="n">fecha_adjudicacion</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;one-column-emphasis&quot;]/tbody/tr[10]/td[1]&#39;</span><span class="p">)</span>
+
+        <span class="n">info_SIE_dict</span><span class="p">[</span><span class="s2">&quot;Fecha_publicacion&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fecha_publicacion</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">info_SIE_dict</span><span class="p">[</span><span class="s2">&quot;Fecha_puja&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fecha_subasta</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">info_SIE_dict</span><span class="p">[</span><span class="s2">&quot;Fecha_adjudicacion&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fecha_adjudicacion</span><span class="o">.</span><span class="n">text</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[SCRAPER] Failed to retrieve information in Information table</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="c1">#print(R + entry_message)</span>
+
+        <span class="n">db_error_connection</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">conect_to_dscp_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;scraper&#39;</span><span class="p">,</span> <span class="s1">&#39;extrc&#39;</span><span class="p">,</span> <span class="n">today</span><span class="p">,</span>
+                             <span class="n">entry_message</span><span class="p">)</span>
+
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;[SCRAPER] Information in table retrieved fail.&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+    <span class="c1">#Obtencion de links extras</span>
+
+    <span class="k">try</span><span class="p">:</span>
+
+        <span class="n">info_SIE_dict</span><span class="p">[</span><span class="s2">&quot;Invitacion&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">info_SIE_dict</span><span class="p">[</span><span class="s2">&quot;Contrato&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">link_invitaciones</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;menu&quot;]/li/ul/a&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_attribute</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">)</span>
+        <span class="n">info_SIE_dict</span><span class="p">[</span><span class="s2">&quot;Invitacion&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">link_invitaciones</span>
+        <span class="n">div_contrato</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_elements_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;menu&quot;]&#39;</span><span class="p">)</span>
+        <span class="n">link_contrato</span> <span class="o">=</span> <span class="n">div_contrato</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">find_element_by_tag_name</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get_attribute</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">)</span>
+        <span class="n">info_SIE_dict</span><span class="p">[</span><span class="s2">&quot;Contrato&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">link_contrato</span>
+
+    <span class="k">except</span>  <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;[SCRAPER] Information in table retrieved fail No link to informacion contrato.&quot;</span><span class="p">)</span>
+        <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[SCRAPER] Failed to retrieve information in Information table</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="c1">#print(R + entry_message)</span>
+
+        <span class="n">db_error_connection</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">conect_to_dscp_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;scraper&#39;</span><span class="p">,</span> <span class="s1">&#39;extrc&#39;</span><span class="p">,</span> <span class="n">today</span><span class="p">,</span>
+                             <span class="n">entry_message</span><span class="p">)</span>
+
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[SCRAPER] Information in table retrieved succesfully.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># print(info_SIE_dict)</span>
+    <span class="c1"># print(autoridades_list)</span>
+    <span class="c1"># print(comision_list)</span>
+
+    <span class="k">return</span> <span class="n">info_SIE_dict</span><span class="p">,</span><span class="n">autoridades_list</span><span class="p">,</span><span class="n">comision_list</span></div>
+
+
+<span class="c1">#level2</span>
+
+<div class="viewcode-block" id="extract_SIE_lv2"><a class="viewcode-back" href="../../index.html#src.st_scraper_wecpsie.extract_SIE_lv2">[docs]</a><span class="k">def</span> <span class="nf">extract_SIE_lv2</span><span class="p">(</span><span class="n">infotable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Information scraper for table &quot;Informacion de Adjudicacion&quot;</span>
+<span class="sd">    This function is classified as Level_2.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    infotable : WebObjectInstance</span>
+<span class="sd">        Web object that represents the table on which all the</span>
+<span class="sd">        information in this page is displayed, including all visible sections.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    contrato_DIC : dict,</span>
+<span class="sd">        A dictionary containing the information scrapped from the table mentioned.</span>
+<span class="sd">        The dictionary has the following example structure:</span>
+
+<span class="sd">            {</span>
+<span class="sd">             &#39;Ruc&#39;:&#39;172689256001&#39;,</span>
+<span class="sd">             &#39;Nombre adjudicacion&#39;:&#39;Nombre&#39;,</span>
+<span class="sd">             &#39;Fecha adjudicacion&#39;:&#39;2020-06-20&#39;,</span>
+<span class="sd">             &#39;Monto&#39;:&#39;62.03&#39;,</span>
+<span class="sd">             &#39;Administrador&#39;:&#39;Nombre&#39;</span>
+<span class="sd">             }</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+
+<span class="sd">    Please refer to the documentation and implementation of the function *save_SIE_contrato_info* in the database module</span>
+<span class="sd">    to see which fields the dictionary might not contain.</span>
+<span class="sd">    Any error, warning, info encountered during the function operations will be logged in WECPSIE database.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from selenium import webdriver</span>
+<span class="sd">    &gt;&gt;&gt; import st_scraper_wecpsie as dextract</span>
+<span class="sd">    &gt;&gt;&gt; pcrawler = webdriver.Chrome(Driver_PATH)</span>
+<span class="sd">    &gt;&gt;&gt; infotable = WebDriverWait(pcrawler, 5).until(EC.presence_of_element_located((By.XPATH, &#39;//*[@id=&quot;frminfoGeneralContrato&quot;]/table&#39;)))</span>
+<span class="sd">    &gt;&gt;&gt; contratos_dict = dextract.extract_SIE_lv2(infotable)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">contrato_DIC</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ruc</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;frminfoGeneralContrato&quot;]/table/tbody/tr[15]/td/table/tbody/tr[2]/td[2]&#39;</span><span class="p">)</span>
+        <span class="n">nombre</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;frminfoGeneralContrato&quot;]/table/tbody/tr[15]/td/table/tbody/tr[2]/td[3]&#39;</span><span class="p">)</span>
+        <span class="n">fecha_adj</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;frminfoGeneralContrato&quot;]/table/tbody/tr[15]/td/table/tbody/tr[2]/td[4]&#39;</span><span class="p">)</span>
+        <span class="n">monto</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;frminfoGeneralContrato&quot;]/table/tbody/tr[15]/td/table/tbody/tr[2]/td[5]&#39;</span><span class="p">)</span>
+        <span class="n">admin</span> <span class="o">=</span> <span class="n">infotable</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;frminfoGeneralContrato&quot;]/table/tbody/tr[18]/td/table/tbody/tr[3]/td[16]&#39;</span><span class="p">)</span>
+
+        <span class="n">monto_str</span> <span class="o">=</span> <span class="n">monto</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">monto_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">monto_str</span><span class="p">))</span>
+
+
+        <span class="n">contrato_DIC</span><span class="p">[</span><span class="s1">&#39;Ruc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ruc</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">contrato_DIC</span><span class="p">[</span><span class="s1">&#39;Nombre&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nombre</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">contrato_DIC</span><span class="p">[</span><span class="s1">&#39;Fecha_adj&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fecha_adj</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">contrato_DIC</span><span class="p">[</span><span class="s1">&#39;Monto&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">monto_value</span>
+        <span class="n">contrato_DIC</span><span class="p">[</span><span class="s1">&#39;Admin&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">admin</span><span class="o">.</span><span class="n">text</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[SCRAPER] Failed to retrieve information in Contrato Information table</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">R</span> <span class="o">+</span> <span class="n">entry_message</span><span class="p">)</span>
+
+        <span class="n">db_error_connection</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">conect_to_dscp_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;scraper&#39;</span><span class="p">,</span> <span class="s1">&#39;extrc&#39;</span><span class="p">,</span> <span class="n">today</span><span class="p">,</span>
+                             <span class="n">entry_message</span><span class="p">)</span>
+
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">)</span>
+
+
+    <span class="c1">#print(contrato_DIC)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[SCRAPER] Information in table retrieved succesfully.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">contrato_DIC</span></div>
+
+
+
+
+
+<div class="viewcode-block" id="extract_SIE_lv2_inv"><a class="viewcode-back" href="../../index.html#src.st_scraper_wecpsie.extract_SIE_lv2_inv">[docs]</a><span class="k">def</span> <span class="nf">extract_SIE_lv2_inv</span><span class="p">(</span><span class="n">infotable</span><span class="p">,</span><span class="n">dcrawler</span><span class="p">,</span><span class="n">n_inv</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Information scraper for table &quot;Invitaciones a proveedores&quot;</span>
+<span class="sd">    This function is classified as Level_2.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    infotable : WebObjectInstance</span>
+<span class="sd">        Web object that represents the table on which all the</span>
+<span class="sd">        information in this page is displayed, including all visible sections.</span>
+
+<span class="sd">    dcrawler : webdriver instance to perform crawling operations.</span>
+
+<span class="sd">    n_inv: int, default=&quot;50&quot;</span>
+<span class="sd">        The number of rows to retrieve from the current page search table. The crawler module</span>
+<span class="sd">        passes this argument in order to retrieve a certain number of records in the table.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">     swing_table_invitation_list : list,</span>
+<span class="sd">        A list containing various dictionarys with the information scrapped from the table mentioned.</span>
+<span class="sd">        Each dictionary has the following example structure:</span>
+
+<span class="sd">            {</span>
+<span class="sd">             &#39;Razon_social&#39;:&#39;ABAD PARDO REYNALDO CESAR&#39;,</span>
+<span class="sd">             &#39;Fecha_invitacion&#39;:&#39;2020-07-31 13:02&#39;,</span>
+<span class="sd">             &#39;Provincia&#39;:&#39;GUAYAS - SIMON BOLIVAR&#39;,</span>
+<span class="sd">             &#39;Estado&#39;:&#39; No Habilitado en RUP&#39;</span>
+<span class="sd">             }</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+
+<span class="sd">    Any error, warning, info encountered during the function operations will be logged in WECPSIE database.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from selenium import webdriver</span>
+<span class="sd">    &gt;&gt;&gt; import st_scraper_wecpsie as dextract</span>
+<span class="sd">    &gt;&gt;&gt; pcrawler = webdriver.Chrome(Driver_PATH)</span>
+<span class="sd">    &gt;&gt;&gt; infotable = WebDriverWait(pcrawler, 5).until(EC.presence_of_element_located((By.XPATH, &#39;//*[@id=&quot;formPaginas&quot;]/table&#39;)))</span>
+<span class="sd">    &gt;&gt;&gt; invitaciones_dict = dextract.extract_SIE_lv2_inv(infotable,pcrawler,50)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">swing_table_invitation_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">page_index_labels</span> <span class="o">=</span> <span class="n">dcrawler</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;divListaInv&quot;]/table/tbody/tr[2]/td&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+    <span class="n">current_last_element</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">page_index_labels</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+    <span class="n">last_element</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">page_index_labels</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span>
+
+    <span class="n">page_label</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">page_index_labels</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+    <span class="c1">#print(C + &quot;[SCRAPER] Extranting table info for: {}&quot;.format(page_label))</span>
+
+
+    <span class="k">while</span> <span class="n">current_last_element</span> <span class="o">&lt;=</span> <span class="n">last_element</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+
+
+            <span class="n">table_len</span> <span class="o">=</span> <span class="n">dcrawler</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;formPaginas&quot;]/table&#39;</span><span class="p">)</span>
+
+
+            <span class="n">table_rows</span> <span class="o">=</span> <span class="n">table_len</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;tr&quot;</span><span class="p">)</span>
+
+            <span class="n">table_headers</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="n">row_index</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">table_rows</span><span class="p">:</span>
+
+                <span class="n">invitaciones_DIC</span> <span class="o">=</span> <span class="p">{}</span>
+
+                <span class="k">if</span> <span class="n">row_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="k">for</span> <span class="n">header</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;td&quot;</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">counter</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">table_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">header</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">counter</span><span class="o">+=</span><span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="n">col_index</span> <span class="o">=</span> <span class="mi">0</span>
+
+                    <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">find_elements_by_tag_name</span><span class="p">(</span><span class="s2">&quot;td&quot;</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">col_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="k">pass</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">col_name</span> <span class="o">=</span> <span class="n">table_headers</span><span class="p">[</span><span class="n">col_index</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                            <span class="k">if</span> <span class="n">col_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">invitaciones_DIC</span><span class="p">:</span>
+                                <span class="n">invitaciones_DIC</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">text</span>
+
+                        <span class="n">col_index</span> <span class="o">+=</span><span class="mi">1</span>
+
+                    <span class="n">swing_table_invitation_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">invitaciones_DIC</span><span class="p">)</span>
+
+                <span class="n">row_index</span> <span class="o">+=</span><span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">current_last_element</span> <span class="o">&gt;</span> <span class="n">n_inv</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="n">current_last_element</span> <span class="o">==</span> <span class="n">last_element</span><span class="p">:</span>
+                 <span class="k">break</span>
+            <span class="c1">#Next page</span>
+            <span class="n">next_page</span> <span class="o">=</span> <span class="n">dcrawler</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;divListaInv&quot;]/table/tbody/tr[1]/td[3]/a&#39;</span><span class="p">)</span>
+
+            <span class="n">next_page</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+
+            <span class="c1"># extract index of the current page</span>
+            <span class="n">page_index_labels</span> <span class="o">=</span> <span class="n">dcrawler</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;divListaInv&quot;]/table/tbody/tr[2]/td&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+            <span class="n">current_last_element</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">page_index_labels</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+            <span class="n">last_element</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">page_index_labels</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span>
+
+            <span class="n">page_label</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">page_index_labels</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+            <span class="c1">#print(C+&quot;[SCRAPER] Extranting table info for: {}&quot;.format(page_label))</span>
+
+            <span class="c1"># print(G+&quot;[SCRAPER] Information in table for {} retrieved succesfully.&quot;.format(</span>
+            <span class="c1">#     page_label))</span>
+            <span class="c1">#print(swing_table_invitation_list)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+
+            <span class="c1"># LOG area</span>
+            <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[SCRAPER] Failed to retrieve information in Invitation table</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="c1">#print(R + entry_message)</span>
+
+            <span class="n">db_error_connection</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">conect_to_dscp_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+
+            <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;[SCRAPER]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;scraper&#39;</span><span class="p">,</span> <span class="s1">&#39;extrc&#39;</span><span class="p">,</span> <span class="n">today</span><span class="p">,</span>
+                                 <span class="n">entry_message</span><span class="p">)</span>
+
+            <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_error_connection</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;[SCRAPER] Failed to retrieve information in Invitation table </span><span class="si">{}</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="c1">#print(e)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[SCRAPER] Information in table Invitaciones a proveedores retrieved succesfully.&quot;</span><span class="p">)</span>
+    <span class="c1">#print(swing_table_invitation_list)</span>
+    <span class="c1">#print(len(swing_table_invitation_list))</span>
+
+    <span class="k">return</span> <span class="n">swing_table_invitation_list</span></div>
+
+
+
+
+<span class="c1"># main program, testing only</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+
+    <span class="n">driver</span> <span class="o">=</span> <span class="n">webdriver</span><span class="o">.</span><span class="n">Chrome</span><span class="p">(</span><span class="n">dutils</span><span class="o">.</span><span class="n">GDriver_PATH</span><span class="p">)</span>
+    <span class="c1">#dd = driver.get(&quot;https://www.compraspublicas.gob.ec/ProcesoContratacion/compras/PC/informacionProcesoContratacion2.cpe?idSoliCompra=Ob221JtHRXNXGMqxfHzL-fjsGTpYrKa8RFP8B22UKYg,&quot;)</span>
+    <span class="c1">#dd = driver.get(&#39;https://www.compraspublicas.gob.ec/ProcesoContratacion/compras/PC/informacionProcesoContratacion2.cpe?idSoliCompra=bgqAn1x_doMc1plEGfQyWwz44UbNkuQZbw5Pey7GCq0,&#39;)</span>
+
+    <span class="c1"># dd = driver.get(&#39;https://www.compraspublicas.gob.ec/ProcesoContratacion/compras/PC/informacionProcesoContratacion2.cpe?idSoliCompra=YSSRqurXwAj4o5L6TJYSev2_d1M0um8td8v9ILe_jt4,&#39;)</span>
+    <span class="c1">#     # infotable = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, &#39;ladoDer&#39;)))</span>
+    <span class="c1">#     # time.sleep(2)</span>
+    <span class="c1">#     # extract_SIE_lv1(infotable)</span>
+    <span class="c1">#     # driver.quit()</span>
+
+    <span class="c1">#dd = driver.get(&#39;https://www.compraspublicas.gob.ec/ProcesoContratacion/compras/EC/resumenContractual1.cpe?idSoliCompra=bbNmZrv2JzbHn-pID33beeYZ57v4QwtzQPow7MiHlrY,&amp;cnt=928-hS6GSn6QbGyUV3hEORazuY6Gqs8Nu1cA2JY-Gus,&amp;contratoId=JmI166t9rLTT8fqTPUgOB5HLAdD-bFiL3T1Hn1v2Hjc&#39;)</span>
+    <span class="n">dd</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;https://www.compraspublicas.gob.ec/ProcesoContratacion/compras/IV/ReporteInvitaciones.cpe?solicitud=yA2AbIL142NPoOimM3387DHKV7hYvZvt51SJOEOzfWA,&#39;</span><span class="p">)</span>
+    <span class="n">infotable</span> <span class="o">=</span> <span class="n">WebDriverWait</span><span class="p">(</span><span class="n">driver</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">until</span><span class="p">(</span><span class="n">EC</span><span class="o">.</span><span class="n">presence_of_element_located</span><span class="p">((</span><span class="n">By</span><span class="o">.</span><span class="n">XPATH</span><span class="p">,</span> <span class="s1">&#39;//*[@id=&quot;formPaginas&quot;]/table&#39;</span><span class="p">)))</span>
+    <span class="n">extract_SIE_lv2_inv</span><span class="p">(</span><span class="n">infotable</span><span class="p">,</span><span class="n">driver</span><span class="p">)</span>
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Sebastian Taraguay.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

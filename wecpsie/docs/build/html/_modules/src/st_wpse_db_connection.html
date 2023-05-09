@@ -1,0 +1,961 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>src.st_wpse_db_connection &mdash; wecpsie 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> wecpsie
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">wecpsie</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>src.st_wpse_db_connection</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for src.st_wpse_db_connection</h1><div class="highlight"><pre>
+<span></span>
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="kn">import</span> <span class="nn">mysql.connector</span>
+<span class="kn">from</span> <span class="nn">mysql.connector</span> <span class="kn">import</span> <span class="n">cursor</span>
+<span class="kn">import</span> <span class="nn">pytz</span>
+<span class="kn">from</span> <span class="nn">mysql.connector</span> <span class="kn">import</span> <span class="n">Error</span>
+
+
+<span class="n">R</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[31m&#39;</span>  <span class="c1"># red</span>
+<span class="n">G</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[32m&#39;</span>  <span class="c1"># green</span>
+<span class="n">C</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[36m&#39;</span>  <span class="c1"># cyan</span>
+<span class="n">W</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[0m&#39;</span>  <span class="c1"># white</span>
+<span class="n">P</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[35m&#39;</span>  <span class="c1">#morado</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[33m&#39;</span>  <span class="c1">#amarrilo</span>
+
+<span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+<span class="n">today</span> <span class="o">=</span> <span class="n">now</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>
+
+
+
+<div class="viewcode-block" id="conect_to_wpsie_db"><a class="viewcode-back" href="../../index.html#src.st_wpse_db_connection.conect_to_wpsie_db">[docs]</a><span class="k">def</span> <span class="nf">conect_to_wpsie_db</span><span class="p">(</span><span class="n">credentials</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initiates conection with WECPSIE database.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    credentials : list, A list that contains the credentials needed to connect to the database.</span>
+<span class="sd">    Must have: ``[host, database_name, user, password]``</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    connection : CMySQLConnection | MySQLConnection, Connection object to perform further db transactions.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;[DB_CON] Connecting to </span><span class="si">{}</span><span class="s2"> database...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">credentials</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">connection</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connector</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">credentials</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                             <span class="n">database</span><span class="o">=</span><span class="n">credentials</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                             <span class="n">user</span><span class="o">=</span><span class="n">credentials</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                                             <span class="n">password</span><span class="o">=</span><span class="n">credentials</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">connection</span><span class="o">.</span><span class="n">is_connected</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[DB_CON] Connected to </span><span class="si">{}</span><span class="s2">!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">credentials</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="k">return</span> <span class="n">connection</span>
+    <span class="k">except</span> <span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;[DB_CON] Error while connecting to </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">credentials</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">e</span><span class="p">)</span></div>
+
+<span class="c1"># index_level DB methods</span>
+
+
+
+<div class="viewcode-block" id="save_index_search_table"><a class="viewcode-back" href="../../index.html#src.st_wpse_db_connection.save_index_search_table">[docs]</a><span class="k">def</span> <span class="nf">save_index_search_table</span><span class="p">(</span><span class="n">search_table_list</span><span class="p">,</span> <span class="n">connection</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;insert&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Performs the INSERT/UPDATE transaction for the information scraped from: Búsqueda de Procesos de Contratación.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    search_table_list : list,</span>
+<span class="sd">        A list containing the dictionaries that represent the information scrapped from the records in the current page.</span>
+<span class="sd">        Please refer to the method *get_main_page_table_info* in the extract module for the dictionary structure.</span>
+
+<span class="sd">    connection : CMySQLConnection | MySQLConnection, Connection object to perform further db transactions.</span>
+
+<span class="sd">    mode : str, default=&#39;insert&#39;,</span>
+<span class="sd">        A string that represents the mode this function is going to store the data into database (insert, update)</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Any error, warning, info encountered during the function operations will be logged in WECPSIE database.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;[DB_SIST] Saving index result table records on WECPSIE database...&quot;</span><span class="p">)</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">pcp_dict</span> <span class="ow">in</span> <span class="n">search_table_list</span><span class="p">:</span>
+
+        <span class="n">base_query</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">final_query</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">process_id_key</span> <span class="o">=</span> <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Código&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;INSERT&#39;</span><span class="p">:</span>
+
+            <span class="n">base_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;INSERT INTO index_search_result</span>
+<span class="s2">            (id_proceso, p_link, entidad_contratante,</span>
+<span class="s2">             objeto_proceso, estado, provincia_canton, presupuesto, fecha_publi, opciones)</span>
+<span class="s2">            VALUES (&#39;</span><span class="si">{}</span><span class="s2">&#39;, &#39;</span><span class="si">{}</span><span class="s2">&#39;, &#39;</span><span class="si">{}</span><span class="s2">&#39;, &#39;</span><span class="si">{}</span><span class="s2">&#39;, &#39;</span><span class="si">{}</span><span class="s2">&#39;, &#39;</span><span class="si">{}</span><span class="s2">&#39;, &#39;</span><span class="si">{}</span><span class="s2">&#39;, &#39;</span><span class="si">{}</span><span class="s2">&#39;, &#39;</span><span class="si">{}</span><span class="s2">&#39;) &quot;&quot;&quot;</span>
+
+            <span class="n">final_query</span> <span class="o">=</span> <span class="n">base_query</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Código&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Entidad Contratante&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Objeto del Proceso&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Estado del Proceso&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Provincia/Cantón&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Presupuesto Referencial Total(sin iva)&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Fecha de Publicación&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Opciones&#39;</span><span class="p">]</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;UPDATE&#39;</span><span class="p">:</span>
+
+            <span class="n">base_query</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;UPDATE index_search_result</span>
+<span class="s1">                        SET id_proceso = &#39;</span><span class="si">{}</span><span class="s1">&#39;, p_link = &#39;</span><span class="si">{}</span><span class="s1">&#39;, entidad_contratante = &#39;</span><span class="si">{}</span><span class="s1">&#39;,</span>
+<span class="s1">                        objeto_proceso = &#39;</span><span class="si">{}</span><span class="s1">&#39;, estado = &#39;</span><span class="si">{}</span><span class="s1">&#39;, provincia_canton = &#39;</span><span class="si">{}</span><span class="s1">&#39;, presupuesto = &#39;</span><span class="si">{}</span><span class="s1">&#39;, fecha_publi = &#39;</span><span class="si">{}</span><span class="s1">&#39;, opciones = &#39;</span><span class="si">{}</span><span class="s1">&#39;</span>
+<span class="s1">                        WHERE (id_proceso = &#39;</span><span class="si">{}</span><span class="s1">&#39;) and (entidad_contratante = &#39;</span><span class="si">{}</span><span class="s1">&#39;) &#39;&#39;&#39;</span>
+
+            <span class="n">final_query</span> <span class="o">=</span> <span class="n">base_query</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Código&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Entidad Contratante&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Objeto del Proceso&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Estado del Proceso&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Provincia/Cantón&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Presupuesto Referencial Total(sin iva)&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Fecha de Publicación&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Opciones&#39;</span><span class="p">],</span>
+                <span class="c1"># where pks</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Código&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Entidad Contratante&#39;</span><span class="p">]</span>
+            <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+
+            <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">final_query</span><span class="p">)</span>
+            <span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[DB_SIST] |</span><span class="si">{}</span><span class="s2">| Successfully record </span><span class="si">{}</span><span class="s2"> into index_search_result table!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">process_id_key</span><span class="p">,</span> <span class="n">mode</span><span class="p">))</span>
+            <span class="n">cursor</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="c1"># LOG area</span>
+            <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">process_id_key</span><span class="p">,</span> <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Entidad Contratante&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Fecha de Publicación&#39;</span><span class="p">],</span> <span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span><span class="n">today</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+
+            <span class="n">entry_message</span> <span class="o">=</span> <span class="n">R</span><span class="o">+</span><span class="s2">&quot;[DB_SIST] Error while inserting data to index_search_result table:</span><span class="se">\n</span><span class="s2">  PID: |</span><span class="si">{}</span><span class="s2">|</span><span class="se">\n</span><span class="s2">  Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">process_id_key</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">entry_message</span><span class="p">)</span>
+
+            <span class="c1"># LOG area</span>
+            <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">process_id_key</span><span class="p">,</span> <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Entidad Contratante&#39;</span><span class="p">],</span>
+                <span class="n">pcp_dict</span><span class="p">[</span><span class="s1">&#39;Fecha de Publicación&#39;</span><span class="p">],</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">entry_message</span><span class="p">,</span><span class="n">today</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_triad_pks"><a class="viewcode-back" href="../../index.html#src.st_wpse_db_connection.get_triad_pks">[docs]</a><span class="k">def</span> <span class="nf">get_triad_pks</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">connection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieves a tuple list (id_proceso, entidad_contratante) of the primary</span>
+<span class="sd">    keys used in the tables index_search_results, and info_sie.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    table : str,</span>
+<span class="sd">        A string representing the table from which the method will extract the pks.</span>
+
+<span class="sd">    connection : CMySQLConnection | MySQLConnection, Connection object to perform further db transactions.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    triad_pks : list,</span>
+<span class="sd">        A list of tuples which that represents the PK combination for every entry in the selected table.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">triad_pk_query</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;SELECT id_proceso, entidad_contratante</span>
+<span class="s1">                        FROM wecpsie.</span><span class="si">{}</span><span class="s1"></span>
+<span class="s1">                        &#39;&#39;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">triad_pk_query</span><span class="p">)</span>
+    <span class="n">triad_pks</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[DB_TRIPK] Done! Total number of TRIAD PKS retrieved: &quot;</span><span class="p">,</span> <span class="n">cursor</span><span class="o">.</span><span class="n">rowcount</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">triad_pks</span></div>
+
+<span class="c1"># level1 DB methods</span>
+
+<div class="viewcode-block" id="get_procesos_page_links"><a class="viewcode-back" href="../../index.html#src.st_wpse_db_connection.get_procesos_page_links">[docs]</a><span class="k">def</span> <span class="nf">get_procesos_page_links</span><span class="p">(</span><span class="n">connection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieves the links and the id for all the stored PCPSIE in database, ordered by latest date.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    connection : CMySQLConnection | MySQLConnection, Connection object to perform further db transactions.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    p_links : list, A list of tuples containing the id and the link from the fetched records in database.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">P</span><span class="o">+</span><span class="s2">&quot;[DB_PLINKS] Fetching links of procesos stored at the database&quot;</span><span class="p">)</span>
+    <span class="n">select_links_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT id_proceso, p_link  FROM index_search_result ORDER BY fecha_publi DESC&quot;&quot;&quot;</span>
+
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">select_links_query</span><span class="p">)</span>
+    <span class="n">p_links</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[DB_PLINKS] Done! Total number of links retrieved: &quot;</span><span class="p">,</span> <span class="n">cursor</span><span class="o">.</span><span class="n">rowcount</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">p_links</span></div>
+
+
+
+<div class="viewcode-block" id="save_SIE_info"><a class="viewcode-back" href="../../index.html#src.st_wpse_db_connection.save_SIE_info">[docs]</a><span class="k">def</span> <span class="nf">save_SIE_info</span><span class="p">(</span><span class="n">sie_dict</span><span class="p">,</span> <span class="n">list_autoridades</span><span class="p">,</span><span class="n">list_comision</span><span class="p">,</span> <span class="n">connection</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;insert&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Performs the INSERT/UPDATE transaction for the information scraped from: Información Proceso Contratación.</span>
+<span class="sd">    This includes the information under the tables &quot;Descripción del Proceso de Contratación&quot; and &quot;Fechas de Control del Proceso&quot;</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sie_dict : dict, A dictionary containing the information scrapped from the tables &quot;Información Proceso Contratación&quot; and &quot;Fechas de Control.&quot;</span>
+<span class="sd">    list_autoridades : list, A list containing the dictionaries with the information of the Autorities of each process</span>
+<span class="sd">    list_comision : list, A list containing the dictionaries with the information of the Comision Tecnica if the case of each process</span>
+
+<span class="sd">    connection : CMySQLConnection | MySQLConnection, Connection object to perform further db transactions.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The only mandatory keys in sie_dict are ``[&#39;Codigo&#39;,&#39;Entidad Contratante&#39;]``.</span>
+<span class="sd">    The rest of the keys in the dictionary could not exist. It depends on what information is displayed on the page:</span>
+<span class="sd">    Información Proceso Contratación.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;  |--[DB_SIE] |</span><span class="si">{}</span><span class="s2">| Saving PSIE info in WECPSIE database...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">]))</span>
+
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;INSERT&#39;</span><span class="p">:</span>
+        <span class="n">sie_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;INSERT INTO info_sie</span>
+<span class="s2">                    (id_proceso, entidad_contratante, objeto_proceso, compra, presupuesto,</span>
+<span class="s2">                    funcionario, estado, tipo_Adj, plazo_entrega, f_publicacion,</span>
+<span class="s2">                    f_inicio_puja, f_adjudicacion, inv_link, cont_link)</span>
+<span class="s2">                    VALUES (</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span>
+<span class="s2">                            </span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">)&quot;&quot;&quot;</span>
+
+        <span class="n">autoridad_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;INSERT INTO autoridades</span>
+<span class="s2">                          (cedula,nombre,cargo,origen,id_proceso,entidad_contratante)</span>
+<span class="s2">                          VALUES(</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">)&quot;&quot;&quot;</span>
+
+        <span class="n">comision_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;INSERT INTO comision_tecnica</span>
+<span class="s2">                         (cedula_ct,nombre_ct,funcion_ct,id_proceso,entidad_contratante)</span>
+<span class="s2">                         VALUES(</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">)&quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># statements without if condition cant be empty</span>
+            <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sie_query</span><span class="p">,</span> <span class="p">(</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Objeto&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Compra&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Presupuesto&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Presupuesto&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Funcionario&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Funcionario&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Estado&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Estado&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Tipo&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Tipo&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Plazo&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Plazo&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Fecha_publicacion&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Fecha_publicacion&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Fecha_puja&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Fecha_adjudicacion&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Fecha_adjudicacion&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Invitacion&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Contrato&#39;</span><span class="p">]</span>
+            <span class="p">))</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list_autoridades</span><span class="p">)):</span>
+
+                <span class="n">dic_autoridad</span> <span class="o">=</span> <span class="n">list_autoridades</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+                <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">autoridad_query</span><span class="p">,(</span>
+                    <span class="n">dic_autoridad</span><span class="p">[</span><span class="s1">&#39;Cedula&#39;</span><span class="p">],</span>
+                    <span class="n">dic_autoridad</span><span class="p">[</span><span class="s1">&#39;Nombre&#39;</span><span class="p">],</span>
+                    <span class="n">dic_autoridad</span><span class="p">[</span><span class="s1">&#39;Cargo&#39;</span><span class="p">],</span>
+                    <span class="n">dic_autoridad</span><span class="p">[</span><span class="s1">&#39;Origen&#39;</span><span class="p">],</span>
+                    <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span>
+                    <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">]</span>
+                <span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_comision</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list_comision</span><span class="p">)):</span>
+
+                    <span class="n">dic_comision</span> <span class="o">=</span> <span class="n">list_comision</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+                    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">comision_query</span><span class="p">,(</span>
+
+                        <span class="n">dic_comision</span><span class="p">[</span><span class="s1">&#39;Cedula&#39;</span><span class="p">],</span>
+                        <span class="n">dic_comision</span><span class="p">[</span><span class="s1">&#39;Nombre&#39;</span><span class="p">],</span>
+                        <span class="n">dic_comision</span><span class="p">[</span><span class="s1">&#39;Funcion&#39;</span><span class="p">],</span>
+                        <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span>
+                        <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">]</span>
+                    <span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;  |--[DB_SIE] |</span><span class="si">{}</span><span class="s2">| PSIE info INSERTED successfully into info_sie table!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">]))</span>
+
+            <span class="c1"># # LOG zone</span>
+            <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span> <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Fecha_publicacion&#39;</span><span class="p">],</span> <span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="s1">&#39;lvl_1&#39;</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">today</span><span class="p">)</span>
+            <span class="c1"># cursor.close()</span>
+
+        <span class="k">except</span> <span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[DB_SIE] Error while inserting SIE data to info_sie:</span><span class="se">\n</span><span class="s2">  PID: |</span><span class="si">{}</span><span class="s2">|</span><span class="se">\n</span><span class="s2">  Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span> <span class="n">e</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;  |--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">entry_message</span><span class="p">))</span>
+
+            <span class="c1"># LOG area</span>
+            <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span> <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Fecha_publicacion&#39;</span><span class="p">],</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;lvl_1&#39;</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">today</span><span class="p">,</span> <span class="n">entry_message</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;UPDATE&#39;</span><span class="p">:</span>
+        <span class="n">sie_query</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;UPDATE info_sie</span>
+<span class="s1">                        SET id_proceso = </span><span class="si">%s</span><span class="s1">, entidad_contratante = </span><span class="si">%s</span><span class="s1">, objeto_proceso = </span><span class="si">%s</span><span class="s1">, compra = </span><span class="si">%s</span><span class="s1">,</span>
+<span class="s1">                            presupuesto = </span><span class="si">%s</span><span class="s1">, funcionario = </span><span class="si">%s</span><span class="s1">, estado = </span><span class="si">%s</span><span class="s1">, tipo_adj = </span><span class="si">%s</span><span class="s1">,</span>
+<span class="s1">                            plazo_entrega = </span><span class="si">%s</span><span class="s1">, f_publicacion = </span><span class="si">%s</span><span class="s1">, f_inicio_puja = </span><span class="si">%s</span><span class="s1">, f_adjudicacion = </span><span class="si">%s</span><span class="s1">,</span>
+<span class="s1">                            inv_link = </span><span class="si">%s</span><span class="s1">, cont_link = </span><span class="si">%s</span><span class="s1"></span>
+<span class="s1">                        WHERE (id_proceso = </span><span class="si">%s</span><span class="s1">) and (entidad_contratante = </span><span class="si">%s</span><span class="s1">)&#39;&#39;&#39;</span>
+
+        <span class="n">autoridad_query</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;UPDATE autoridades</span>
+<span class="s1">                                SET cedula = </span><span class="si">%s</span><span class="s1">, nombre = </span><span class="si">%s</span><span class="s1">, cargo = </span><span class="si">%s</span><span class="s1">, origen = </span><span class="si">%s</span><span class="s1">,</span>
+<span class="s1">                                id_proceso = </span><span class="si">%s</span><span class="s1">,entidad_contratante = </span><span class="si">%s</span><span class="s1"></span>
+<span class="s1">                            WHERE (id_proceso = </span><span class="si">%s</span><span class="s1">) and (entidad_contratante = </span><span class="si">%s</span><span class="s1">) and (cedula = </span><span class="si">%s</span><span class="s1">)&#39;&#39;&#39;</span>
+
+        <span class="n">comision_query</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;UPDATE comision_tecnica</span>
+<span class="s1">                                SET cedula_ct = </span><span class="si">%s</span><span class="s1">, nombre_ct = </span><span class="si">%s</span><span class="s1">, funcion_ct = </span><span class="si">%s</span><span class="s1">,</span>
+<span class="s1">                                    id_proceso = </span><span class="si">%s</span><span class="s1">, entidad_contratante = </span><span class="si">%s</span><span class="s1"></span>
+<span class="s1">                                WHERE(id_proceso = </span><span class="si">%s</span><span class="s1">) and (entidad_contratante = </span><span class="si">%s</span><span class="s1">) and (cedula_ct = </span><span class="si">%s</span><span class="s1">)&#39;&#39;&#39;</span>
+
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># statements without if condition cant be empty</span>
+            <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sie_query</span><span class="p">,</span> <span class="p">(</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Objeto&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Compra&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Presupuesto&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Presupuesto&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Funcionario&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Funcionario&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Estado&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Estado&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Tipo&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Tipo&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Plazo&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Plazo&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Fecha_publicacion&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Fecha_publicacion&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Fecha_puja&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Fecha_adjudicacion&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;Fecha_adjudicacion&#39;</span> <span class="ow">in</span> <span class="n">sie_dict</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Invitacion&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Contrato&#39;</span><span class="p">],</span>
+                <span class="c1"># where clause pks</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">],</span>
+
+            <span class="p">))</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list_autoridades</span><span class="p">)):</span>
+
+                <span class="n">dic_autoridad</span> <span class="o">=</span> <span class="n">list_autoridades</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+                <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">autoridad_query</span><span class="p">,(</span>
+                    <span class="n">dic_autoridad</span><span class="p">[</span><span class="s1">&#39;Cedula&#39;</span><span class="p">],</span>
+                    <span class="n">dic_autoridad</span><span class="p">[</span><span class="s1">&#39;Nombre&#39;</span><span class="p">],</span>
+                    <span class="n">dic_autoridad</span><span class="p">[</span><span class="s1">&#39;Cargo&#39;</span><span class="p">],</span>
+                    <span class="n">dic_autoridad</span><span class="p">[</span><span class="s1">&#39;Origen&#39;</span><span class="p">],</span>
+                    <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span>
+                    <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">],</span>
+                    <span class="c1"># where clause pks</span>
+                    <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span>
+                    <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">],</span>
+                    <span class="n">dic_autoridad</span><span class="p">[</span><span class="s1">&#39;Cedula&#39;</span><span class="p">]</span>
+                <span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_comision</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list_comision</span><span class="p">)):</span>
+
+                    <span class="n">dic_comision</span> <span class="o">=</span> <span class="n">list_comision</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+                    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">comision_query</span><span class="p">,(</span>
+
+                        <span class="n">dic_comision</span><span class="p">[</span><span class="s1">&#39;Cedula&#39;</span><span class="p">],</span>
+                        <span class="n">dic_comision</span><span class="p">[</span><span class="s1">&#39;Nombre&#39;</span><span class="p">],</span>
+                        <span class="n">dic_comision</span><span class="p">[</span><span class="s1">&#39;Funcion&#39;</span><span class="p">],</span>
+                        <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span>
+                        <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">],</span>
+                        <span class="c1"># where clause pks</span>
+                        <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span>
+                        <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">],</span>
+                        <span class="n">dic_comision</span><span class="p">[</span><span class="s1">&#39;Cedula&#39;</span><span class="p">]</span>
+                    <span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;  |--[DB_SIE] |</span><span class="si">{}</span><span class="s2">| PSIE info UPDATED successfully into info_sie table!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">]))</span>
+
+            <span class="c1"># # LOG zone</span>
+            <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span> <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Fecha_publicacion&#39;</span><span class="p">],</span> <span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="s1">&#39;lvl_1&#39;</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">today</span><span class="p">)</span>
+            <span class="c1"># cursor.close()</span>
+
+        <span class="k">except</span> <span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[DB_SIE] Error while UPDATING PSIE data to info_sie:</span><span class="se">\n</span><span class="s2">  PID: |</span><span class="si">{}</span><span class="s2">|</span><span class="se">\n</span><span class="s2">  Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span> <span class="n">e</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;  |--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">entry_message</span><span class="p">))</span>
+
+            <span class="c1"># # LOG area</span>
+            <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span> <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">],</span>
+                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Fecha_publicacion&#39;</span><span class="p">],</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;lvl_1&#39;</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span> <span class="n">today</span><span class="p">,</span><span class="n">entry_message</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_contrato_links"><a class="viewcode-back" href="../../index.html#src.st_wpse_db_connection.get_contrato_links">[docs]</a><span class="k">def</span> <span class="nf">get_contrato_links</span><span class="p">(</span><span class="n">connection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieves the links of contract if exist and the id for all the stored PCPSIE  in database, ordered by latest date.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    connection : CMySQLConnection | MySQLConnection, Connection object to perform further db transactions.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    p_links : list, A list of tuples containing the id and the link from the fetched records in database.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">P</span><span class="o">+</span><span class="s2">&quot;[DB_PLINKS] Fetching links of contrato stored at the database&quot;</span><span class="p">)</span>
+    <span class="n">select_links_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT id_proceso, entidad_contratante, cont_link  FROM info_sie&quot;&quot;&quot;</span>
+
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">select_links_query</span><span class="p">)</span>
+    <span class="n">p_links</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+
+    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">c_index</span><span class="p">,</span> <span class="n">contrato_link</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">p_links</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">contrato_link</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">counter</span><span class="o">+=</span><span class="mi">1</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[DB_PLINKS] Done! Total number of links retrieved: &quot;</span><span class="p">,</span> <span class="n">counter</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">p_links</span></div>
+
+<div class="viewcode-block" id="get_invitacion_links"><a class="viewcode-back" href="../../index.html#src.st_wpse_db_connection.get_invitacion_links">[docs]</a><span class="k">def</span> <span class="nf">get_invitacion_links</span><span class="p">(</span><span class="n">connection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieves the links of invitation page if exist and the id for all the stored PCPSIE  in database, ordered by latest date.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    connection : CMySQLConnection | MySQLConnection, Connection object to perform further db transactions.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    p_links : list, A list of tuples containing the id and the link from the fetched records in database.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    All processes have a link to the invitations page but in some cases there are no companies invited to the process.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">P</span><span class="o">+</span><span class="s2">&quot;[DB_PLINKS] Fetching links of invitation page stored at the database&quot;</span><span class="p">)</span>
+    <span class="n">select_links_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT id_proceso, entidad_contratante, inv_link  FROM info_sie&quot;&quot;&quot;</span>
+
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">select_links_query</span><span class="p">)</span>
+    <span class="n">p_links</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[DB_PLINKS] Done! Total number of links retrieved: &quot;</span><span class="p">,</span> <span class="n">cursor</span><span class="o">.</span><span class="n">rowcount</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">p_links</span></div>
+
+
+<div class="viewcode-block" id="save_contract_SIE_info"><a class="viewcode-back" href="../../index.html#src.st_wpse_db_connection.save_contract_SIE_info">[docs]</a><span class="k">def</span> <span class="nf">save_contract_SIE_info</span><span class="p">(</span><span class="n">proceso_id</span><span class="p">,</span> <span class="n">entidad_contratante</span><span class="p">,</span><span class="n">contrato_dic</span><span class="p">,</span> <span class="n">connection</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;insert&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Performs the INSERT/UPDATE transaction for the information scraped from: Resumen Información Esencial del Contrato.</span>
+<span class="sd">    This includes the information under the tables &quot;Información de Adjudicación&quot; and &quot;Información del Contrato&quot;</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    proceso_id : str, The identification code of the process</span>
+<span class="sd">    entidad_contratante : str, The entity of the process</span>
+<span class="sd">    contrato_dic : dict, A dictionary containing the information scrapped from the tables &quot;Información de Adjudicación&quot; and &quot;Información del Contrato&quot;</span>
+
+<span class="sd">    connection : CMySQLConnection | MySQLConnection, Connection object to perform further db transactions.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;  |--[DB_SIE] |</span><span class="si">{}</span><span class="s2">| Saving contract PSIE info in WECPSIE database...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">proceso_id</span><span class="p">))</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;INSERT&#39;</span><span class="p">:</span>
+        <span class="n">sie_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;INSERT INTO info_contrato</span>
+<span class="s2">                    (ruc, nombre_adj, fecha_adj, monto, admin_contrato,</span>
+<span class="s2">                    id_proceso, entidad_contratante)</span>
+<span class="s2">                    VALUES (</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">)&quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># statements without if condition cant be empty</span>
+            <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sie_query</span><span class="p">,</span> <span class="p">(</span>
+                <span class="n">contrato_dic</span><span class="p">[</span><span class="s1">&#39;Ruc&#39;</span><span class="p">],</span>
+                <span class="n">contrato_dic</span><span class="p">[</span><span class="s1">&#39;Nombre&#39;</span><span class="p">],</span>
+                <span class="n">contrato_dic</span><span class="p">[</span><span class="s1">&#39;Fecha_adj&#39;</span><span class="p">],</span>
+                <span class="n">contrato_dic</span><span class="p">[</span><span class="s1">&#39;Monto&#39;</span><span class="p">],</span>
+                <span class="n">contrato_dic</span><span class="p">[</span><span class="s1">&#39;Admin&#39;</span><span class="p">],</span>
+                <span class="n">proceso_id</span><span class="p">,</span>
+                <span class="n">entidad_contratante</span>
+            <span class="p">))</span>
+
+            <span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;  |--[DB_SIE] |</span><span class="si">{}</span><span class="s2">| contract PSIE info INSERTED successfully into info_contrato table!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">proceso_id</span><span class="p">))</span>
+
+            <span class="c1"># # LOG zone</span>
+            <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">proceso_id</span><span class="p">,</span> <span class="n">entidad_contratante</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="s1">&#39;lvl_2&#39;</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">today</span><span class="p">)</span>
+            <span class="c1"># cursor.close()</span>
+
+        <span class="k">except</span> <span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[DB_SIE] Error while inserting contract SIE data to info_contrato:</span><span class="se">\n</span><span class="s2">  PID: |</span><span class="si">{}</span><span class="s2">|</span><span class="se">\n</span><span class="s2">  Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">proceso_id</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;  |--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">entry_message</span><span class="p">))</span>
+
+            <span class="c1"># LOG area</span>
+            <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">proceso_id</span><span class="p">,</span> <span class="n">entidad_contratante</span><span class="p">,</span><span class="s1">&#39;&#39;</span> <span class="p">,</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;lvl_2&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">today</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;UPDATE&#39;</span><span class="p">:</span>
+        <span class="n">sie_query</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;UPDATE info_contrato</span>
+<span class="s1">                           SET ruc = </span><span class="si">%s</span><span class="s1">, nombre_adj = </span><span class="si">%s</span><span class="s1">, fecha_adj = </span><span class="si">%s</span><span class="s1">, monto = </span><span class="si">%s</span><span class="s1">,</span>
+<span class="s1">                               admin_contrato = </span><span class="si">%s</span><span class="s1">, id_proceso = </span><span class="si">%s</span><span class="s1">, entidad_contratante = </span><span class="si">%s</span><span class="s1"></span>
+<span class="s1">                           WHERE (id_proceso = </span><span class="si">%s</span><span class="s1">) and (entidad_contratante = </span><span class="si">%s</span><span class="s1">)&#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># statements without if condition cant be empty</span>
+            <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sie_query</span><span class="p">,</span> <span class="p">(</span>
+                <span class="n">contrato_dic</span><span class="p">[</span><span class="s1">&#39;Ruc&#39;</span><span class="p">],</span>
+                <span class="n">contrato_dic</span><span class="p">[</span><span class="s1">&#39;Nombre&#39;</span><span class="p">],</span>
+                <span class="n">contrato_dic</span><span class="p">[</span><span class="s1">&#39;Fecha_adj&#39;</span><span class="p">],</span>
+                <span class="n">contrato_dic</span><span class="p">[</span><span class="s1">&#39;Monto&#39;</span><span class="p">],</span>
+                <span class="n">contrato_dic</span><span class="p">[</span><span class="s1">&#39;Admin&#39;</span><span class="p">],</span>
+                <span class="n">proceso_id</span><span class="p">,</span>
+                <span class="n">entidad_contratante</span><span class="p">,</span>
+                <span class="c1"># where clause pks</span>
+                <span class="n">proceso_id</span><span class="p">,</span>
+                <span class="n">entidad_contratante</span>
+            <span class="p">))</span>
+
+            <span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">G</span> <span class="o">+</span> <span class="s2">&quot;  |--[DB_SIE] |</span><span class="si">{}</span><span class="s2">| contract SIE info UPDATED successfully into info_contrato table!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">proceso_id</span><span class="p">))</span>
+            <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">proceso_id</span><span class="p">,</span> <span class="n">entidad_contratante</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;lvl_2&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">today</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[DB_SIE] Error while UPDATING contract SIE data to info_contrato:</span><span class="se">\n</span><span class="s2">  PID: |</span><span class="si">{}</span><span class="s2">|</span><span class="se">\n</span><span class="s2">  Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">proceso_id</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;  |--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">entry_message</span><span class="p">))</span>
+
+            <span class="c1"># LOG area</span>
+            <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">proceso_id</span><span class="p">,</span> <span class="n">entidad_contratante</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;lvl_2&#39;</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">today</span><span class="p">,</span><span class="n">entry_message</span><span class="p">)</span></div>
+
+
+
+
+
+<div class="viewcode-block" id="save_invitation_SIE_info"><a class="viewcode-back" href="../../index.html#src.st_wpse_db_connection.save_invitation_SIE_info">[docs]</a><span class="k">def</span> <span class="nf">save_invitation_SIE_info</span><span class="p">(</span><span class="n">proceso_id</span><span class="p">,</span> <span class="n">entidad_contratante</span><span class="p">,</span> <span class="n">invitacion_list</span><span class="p">,</span> <span class="n">connection</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;insert&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Performs the INSERT/UPDATE transaction for the information scraped from: Invitacion a proveedores.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    proceso_id : str, The identification code of the process</span>
+<span class="sd">    entidad_contratante : str, The entity of the process</span>
+<span class="sd">    invitacion_list : list, A list containing various dictionarys each one with the information scrapped from the table</span>
+<span class="sd">     &quot;Invitacion a proveedores&quot;</span>
+
+<span class="sd">    connection : CMySQLConnection | MySQLConnection, Connection object to perform further db transactions.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;  |--[DB_SIE] |</span><span class="si">{}</span><span class="s2">| Saving invitation SIE info in WECPSIE database...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">proceso_id</span><span class="p">))</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">invi</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">invitacion_list</span><span class="p">)):</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;INSERT&#39;</span><span class="p">:</span>
+            <span class="n">sie_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;INSERT INTO invitaciones</span>
+<span class="s2">                        (razon_social, fecha_inv, prov_cant, estado,</span>
+<span class="s2">                        id_proceso, entidad_contratante)</span>
+<span class="s2">                        VALUES (</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">,</span><span class="si">%s</span><span class="s2">)&quot;&quot;&quot;</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># statements without if condition cant be empty</span>
+                <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sie_query</span><span class="p">,</span> <span class="p">(</span>
+                    <span class="n">invitacion_list</span><span class="p">[</span><span class="n">invi</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Razón Social - Proveedor&#39;</span><span class="p">),</span>
+                    <span class="n">invitacion_list</span><span class="p">[</span><span class="n">invi</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Fecha de Invitación&#39;</span><span class="p">),</span>
+                    <span class="n">invitacion_list</span><span class="p">[</span><span class="n">invi</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Provincia - Cantón&#39;</span><span class="p">),</span>
+                    <span class="n">invitacion_list</span><span class="p">[</span><span class="n">invi</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Estado actual RUP&#39;</span><span class="p">),</span>
+                    <span class="n">proceso_id</span><span class="p">,</span>
+                    <span class="n">entidad_contratante</span>
+                <span class="p">))</span>
+
+                <span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;  |--[DB_SIE] |</span><span class="si">{}</span><span class="s2">| invitation SIE info INSERTED successfully into invitaciones table!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">proceso_id</span><span class="p">))</span>
+
+                <span class="c1"># # LOG zone</span>
+                <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span><span class="n">proceso_id</span><span class="p">,</span> <span class="n">entidad_contratante</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="s1">&#39;lvl_2&#39;</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">today</span><span class="p">)</span>
+                <span class="c1"># cursor.close()</span>
+
+            <span class="k">except</span> <span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[DB_SIE] Error while inserting invitation SIE data to invitaciones:</span><span class="se">\n</span><span class="s2">  PID: |</span><span class="si">{}</span><span class="s2">|</span><span class="se">\n</span><span class="s2">  Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">proceso_id</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;  |--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">entry_message</span><span class="p">))</span>
+
+                <span class="c1"># LOG area</span>
+                <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span><span class="n">proceso_id</span><span class="p">,</span> <span class="n">entidad_contratante</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;lvl_2&#39;</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">today</span><span class="p">,</span><span class="n">entry_message</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;UPDATE&#39;</span><span class="p">:</span>
+            <span class="n">sie_query</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;UPDATE invitaciones</span>
+<span class="s1">                               SET razon_social = </span><span class="si">%s</span><span class="s1">, fecha_inv = </span><span class="si">%s</span><span class="s1">, prov_cant = </span><span class="si">%s</span><span class="s1">, estado = </span><span class="si">%s</span><span class="s1">,</span>
+<span class="s1">                                   id_proceso = </span><span class="si">%s</span><span class="s1">, entidad_contratante = </span><span class="si">%s</span><span class="s1"></span>
+<span class="s1">                               WHERE (id_proceso = </span><span class="si">%s</span><span class="s1">) and (entidad_contratante = </span><span class="si">%s</span><span class="s1">) and (razon_social = </span><span class="si">%s</span><span class="s1">)&#39;&#39;&#39;</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># statements without if condition cant be empty</span>
+                <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sie_query</span><span class="p">,</span> <span class="p">(</span>
+                    <span class="n">invitacion_list</span><span class="p">[</span><span class="n">invi</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Razón Social - Proveedor&#39;</span><span class="p">),</span>
+                    <span class="n">invitacion_list</span><span class="p">[</span><span class="n">invi</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Fecha de Invitación&#39;</span><span class="p">),</span>
+                    <span class="n">invitacion_list</span><span class="p">[</span><span class="n">invi</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Provincia - Cantón&#39;</span><span class="p">),</span>
+                    <span class="n">invitacion_list</span><span class="p">[</span><span class="n">invi</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Estado actual RUP&#39;</span><span class="p">),</span>
+                    <span class="n">proceso_id</span><span class="p">,</span>
+                    <span class="n">entidad_contratante</span><span class="p">,</span>
+                    <span class="c1"># where clause pks</span>
+                    <span class="n">proceso_id</span><span class="p">,</span>
+                    <span class="n">entidad_contratante</span><span class="p">,</span>
+                    <span class="n">invitacion_list</span><span class="p">[</span><span class="n">invi</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Razón Social - Proveedor&#39;</span><span class="p">)</span>
+
+                <span class="p">))</span>
+
+                <span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">G</span> <span class="o">+</span> <span class="s2">&quot;  |--[DB_SIE] |</span><span class="si">{}</span><span class="s2">| invitation list of SIE info UPDATED successfully into invitaciones table!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">proceso_id</span><span class="p">))</span>
+
+
+            <span class="k">except</span> <span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[DB_SIE] Error while UPDATING invitaciones SIE data to invitaciones:</span><span class="se">\n</span><span class="s2">  PID: |</span><span class="si">{}</span><span class="s2">|</span><span class="se">\n</span><span class="s2">  Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">proceso_id</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;  |--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">entry_message</span><span class="p">))</span>
+
+                <span class="c1"># LOG area</span>
+                <span class="n">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">proceso_id</span><span class="p">,</span> <span class="n">entidad_contratante</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;lvl_2&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">today</span><span class="p">,</span><span class="n">entry_message</span><span class="p">)</span></div>
+
+
+
+
+
+
+<span class="c1"># other methods</span>
+
+
+<div class="viewcode-block" id="add_entry_log"><a class="viewcode-back" href="../../index.html#src.st_wpse_db_connection.add_entry_log">[docs]</a><span class="k">def</span> <span class="nf">add_entry_log</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">id_proceso</span><span class="p">,</span> <span class="n">entidad_contratante</span><span class="p">,</span> <span class="n">f_publicacion</span><span class="p">,</span> <span class="n">entry_type</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span><span class="n">entry_date</span><span class="p">,</span> <span class="n">entry_message</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Inserts ``LOG``entries related to any error, warning, info occurred during the execution of the</span>
+<span class="sd">    modules in this project.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    connection : CMySQLConnection | MySQLConnection, Connection object to perform further db transactions.</span>
+
+<span class="sd">    id_proceso : str,</span>
+<span class="sd">        A string representing the id of a PSIE.</span>
+
+<span class="sd">    entidad_contratante : str,</span>
+<span class="sd">        A string representing the entidad contratante of a PSIE.</span>
+
+<span class="sd">    f_publicacion : str,</span>
+<span class="sd">        A string representing the date when a PSIE was published some cases is empty.</span>
+
+<span class="sd">    entry_type : str, A string that describes the type of log entry: error, warning, info</span>
+
+<span class="sd">    level : str, A string that describes the level where this log_entry was called.</span>
+
+<span class="sd">    action : str, A string that describes the action that fired the log_entry, for example: navigation, extraction, update, store</span>
+
+<span class="sd">    entry_message : str, default=&quot;None&quot;</span>
+<span class="sd">        A string that represents the message thrown by the system about the error or warning encountered.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This function also stores the ``DATETIME`` of the log entry in the database.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="s1">&#39;lvl_0&#39;</span> <span class="ow">in</span> <span class="n">level</span><span class="p">:</span>
+        <span class="n">indent</span> <span class="o">=</span> <span class="s1">&#39;  |--&#39;</span>
+    <span class="k">elif</span> <span class="s1">&#39;lvl_1&#39;</span> <span class="ow">in</span> <span class="n">level</span><span class="p">:</span>
+        <span class="n">indent</span> <span class="o">=</span> <span class="s1">&#39;  |--=&#39;</span>
+    <span class="k">elif</span> <span class="s1">&#39;lvl_2&#39;</span> <span class="ow">in</span> <span class="n">level</span><span class="p">:</span>
+        <span class="n">indent</span> <span class="o">=</span> <span class="s1">&#39;  |--&lt;&lt;&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">indent</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">[DB_LOG] |</span><span class="si">{}</span><span class="s2">| Adding log entry...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indent</span><span class="p">,</span> <span class="n">id_proceso</span><span class="p">))</span>
+
+    <span class="n">entry_query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;INSERT INTO entry_log </span>
+<span class="s2">                (id_proceso, entidad_contratante, fecha_publicacion, entry_type, </span>
+<span class="s2">                entry_level, entry_action, entry_date, entry_message) </span>
+<span class="s2">                VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">)&quot;&quot;&quot;</span>
+
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">entry_query</span><span class="p">,</span> <span class="p">(</span>
+            <span class="n">id_proceso</span><span class="p">,</span>
+            <span class="n">entidad_contratante</span><span class="p">,</span>
+            <span class="n">f_publicacion</span><span class="p">,</span>
+            <span class="n">entry_type</span><span class="p">,</span>
+            <span class="n">level</span><span class="p">,</span>
+            <span class="n">action</span><span class="p">,</span>
+            <span class="n">entry_date</span><span class="p">,</span>
+            <span class="n">entry_message</span>
+        <span class="p">))</span>
+        <span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">[DB_LOG] |</span><span class="si">{}</span><span class="s2">| Log entry added successfully into entry_log table!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indent</span><span class="p">,</span> <span class="n">id_proceso</span><span class="p">))</span>
+
+    <span class="k">except</span> <span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">[DB_LOG] Error while inserting entrylog to entry_log table:</span><span class="se">\n</span><span class="s2"> PID: |</span><span class="si">{}</span><span class="s2">|&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indent</span><span class="p">,</span> <span class="n">id_proceso</span><span class="p">),</span> <span class="n">e</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="disconnect_db"><a class="viewcode-back" href="../../index.html#src.st_wpse_db_connection.disconnect_db">[docs]</a><span class="k">def</span> <span class="nf">disconnect_db</span><span class="p">(</span><span class="n">connection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Disconects from WECPSIE database.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    connection : CMySQLConnection | MySQLConnection, Connection object to perform further db transactions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">connection</span><span class="o">.</span><span class="n">is_connected</span><span class="p">():</span>
+        <span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[DB_OFF] WECPSIE DB connection closed&quot;</span><span class="p">)</span>
+
+    <span class="k">pass</span></div>
+
+
+<span class="c1"># main program, testing only</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+
+    <span class="n">db_connection</span> <span class="o">=</span> <span class="n">conect_to_wpsie_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+    <span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_connection</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="s1">&#39;sebas&#39;</span><span class="p">,</span><span class="s1">&#39;2020-07-12&#39;</span><span class="p">,</span><span class="s1">&#39;info&#39;</span><span class="p">,</span><span class="s1">&#39;lv_0&#39;</span><span class="p">,</span><span class="s1">&#39;insert&#39;</span><span class="p">,</span><span class="s1">&#39;2021-05-16&#39;</span><span class="p">,</span><span class="s1">&#39;hola&#39;</span><span class="p">)</span>
+    <span class="c1"># db_connection = conect_to_wpsie_db([&#39;localhost&#39;, &#39;wecpsie&#39;, &#39;root&#39;, &#39;dontara99&#39;])</span>
+    <span class="c1"># list = []</span>
+    <span class="c1"># # list2 = []</span>
+    <span class="c1"># test = {&#39;Razón Social - Proveedor&#39;: &#39;ZAMBRANO SERRANO EMILIO JOSE&#39;, &#39;Fecha de Invitación&#39;: &#39;2021-04-05 20:02&#39;, &#39;Provincia - Cantón&#39;: &#39;PICHINCHA - QUITO&#39;, &#39;Estado actual RUP&#39;: &#39;Habilitado en RUP&#39;}</span>
+    <span class="c1"># test2 = {&#39;Razón Social - Proveedor&#39;: &#39;ZAMBRANO ZAMBRANO HOMERO GUILLERMO&#39;, &#39;Fecha de Invitación&#39;: &#39;2021-04-05 20:02&#39;, &#39;Provincia - Cantón&#39;: &#39;ESMERALDAS - ESMERALDAS&#39;, &#39;Estado actual RUP&#39;: &#39;Habilitado en RUP&#39;}</span>
+    <span class="c1"># list.append(test)</span>
+    <span class="c1"># list.append(test2)</span>
+    <span class="c1"># save_invitation_SIE_info(&#39;SIE-002-2020-DD11D07&#39;,&#39;DIRECCION DISTRITAL 11D07-MACARA-SOZORANGA-EDUCACION&#39;,list,db_connection,mode=&#39;update&#39;)</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1"># # get_contrataciones_table_page_links(db_connection)</span>
+    <span class="c1">#</span>
+    <span class="c1"># # triads = get_rc_aas_pks(db_connection)</span>
+    <span class="c1"># # print(triads, len(triads))</span>
+    <span class="c1"># # print(type(triads[0]))</span>
+    <span class="c1"># # print(len(triads))</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Sebastian Taraguay.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

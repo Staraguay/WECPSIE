@@ -1,0 +1,770 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>src.st_crawler_wecpsie &mdash; wecpsie 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> wecpsie
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">wecpsie</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>src.st_crawler_wecpsie</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for src.st_crawler_wecpsie</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">selenium</span> <span class="kn">import</span> <span class="n">webdriver</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.common.by</span> <span class="kn">import</span> <span class="n">By</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.common.keys</span> <span class="kn">import</span> <span class="n">Keys</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.support</span> <span class="kn">import</span> <span class="n">expected_conditions</span> <span class="k">as</span> <span class="n">EC</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.support.wait</span> <span class="kn">import</span> <span class="n">WebDriverWait</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.support.select</span> <span class="kn">import</span> <span class="n">Select</span>
+<span class="kn">import</span> <span class="nn">d_utilities</span> <span class="k">as</span> <span class="nn">dutils</span>
+<span class="kn">import</span> <span class="nn">st_scraper_wecpsie</span> <span class="k">as</span> <span class="nn">dextract</span>
+<span class="kn">import</span> <span class="nn">st_wpse_db_connection</span> <span class="k">as</span> <span class="nn">wpsedb</span>
+
+
+
+<span class="n">R</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[31m&#39;</span>  <span class="c1"># red</span>
+<span class="n">G</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[32m&#39;</span>  <span class="c1"># green</span>
+<span class="n">C</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[36m&#39;</span>  <span class="c1"># cyan</span>
+<span class="n">W</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[0m&#39;</span>  <span class="c1"># white</span>
+<span class="n">P</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[35m&#39;</span>  <span class="c1">#morado</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[33m&#39;</span>  <span class="c1">#amarrilo</span>
+
+<span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+<span class="n">today</span> <span class="o">=</span> <span class="n">now</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="swing_index_pages"><a class="viewcode-back" href="../../index.html#src.st_crawler_wecpsie.swing_index_pages">[docs]</a><span class="k">def</span> <span class="nf">swing_index_pages</span><span class="p">(</span><span class="n">driver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">       Navigator for the search result table in page: Búsqueda de Procesos de Contratación.</span>
+
+<span class="sd">       The function crawls over the search result table returned after solving the captcha.</span>
+<span class="sd">       It scraps the summary information for each row which represents a published proceso de</span>
+<span class="sd">       contratación pública mediante subasta inversa electronica (PCPSIE).</span>
+<span class="sd">       The search result table in this page shows at least 20 rows per page. The function handles the</span>
+<span class="sd">       navigation across all these pages until it reaches the last page, which means it has</span>
+<span class="sd">       scrapped all the indexed rows information.</span>
+
+<span class="sd">       Parameters</span>
+<span class="sd">       ----------</span>
+<span class="sd">       driver : webdriver instance to perform crawling operations.</span>
+
+<span class="sd">       Notes</span>
+<span class="sd">       -----</span>
+<span class="sd">       This function opens a web browser window showing the Búsqueda de Procesos de Contratación web page.</span>
+<span class="sd">       Wecpsie version ``0.0.1`` does not have a captcha solving utility, so this function provides the user</span>
+<span class="sd">       a 12 second-window to solve the captcha before performing any action.</span>
+
+<span class="sd">       If the captcha is not solved correctly, the window will close terminating the function and the program.</span>
+
+<span class="sd">       The function first queries the database to determine if it has to run a full insert of all the records</span>
+<span class="sd">       (empty database) or if it has to run the update fucntionality as well as the adding of new records indexed.</span>
+
+<span class="sd">       Any error, warning encountered during the function operations will be logged in WECPSIE database.</span>
+
+<span class="sd">       Examples</span>
+<span class="sd">       --------</span>
+<span class="sd">       &gt;&gt;&gt; from selenium import webdriver</span>
+<span class="sd">       &gt;&gt;&gt; driver = webdriver.Chrome(Driver_PATH)</span>
+<span class="sd">       &gt;&gt;&gt; swing_index_pages(driver)</span>
+<span class="sd">       &quot;&quot;&quot;</span>
+
+    <span class="n">driver</span><span class="o">.</span><span class="n">maximize_window</span><span class="p">()</span>
+    <span class="n">driver</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">dutils</span><span class="o">.</span><span class="n">SERCOP_URL</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">P</span><span class="o">+</span><span class="s2">&quot;[CRAWLER] Abriendo la pagina de la SERCOP ...&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">P</span><span class="o">+</span><span class="s2">&quot;[CRAWLER] Tiempo para setear los parametros de busqueda...&quot;</span><span class="p">)</span>
+    <span class="c1"># method to solve captcha here</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">select_type_process</span> <span class="o">=</span> <span class="n">Select</span><span class="p">(</span><span class="n">driver</span><span class="o">.</span><span class="n">find_element_by_id</span><span class="p">(</span><span class="s1">&#39;txtCodigoTipoCompra&#39;</span><span class="p">))</span>
+    <span class="n">select_type_process</span><span class="o">.</span><span class="n">select_by_value</span><span class="p">(</span><span class="s2">&quot;386&quot;</span><span class="p">);</span>
+
+    <span class="c1">#The dates could be change</span>
+    <span class="c1"># FECHA_INICIO = &quot;2020-07-01&quot;</span>
+    <span class="c1"># FECHA_FINAL = &quot;2020-07-31&quot;</span>
+
+    <span class="n">start_process_date</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_element_by_id</span><span class="p">(</span><span class="s1">&#39;f_inicio&#39;</span><span class="p">)</span>
+    <span class="n">driver</span><span class="o">.</span><span class="n">execute_script</span><span class="p">(</span><span class="s2">&quot;arguments[0].value = &#39;2020-07-31&#39;;&quot;</span><span class="p">,</span> <span class="n">start_process_date</span><span class="p">)</span>
+
+    <span class="n">end_process_date</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_element_by_id</span><span class="p">(</span><span class="s1">&#39;f_fin&#39;</span><span class="p">)</span>
+    <span class="n">driver</span><span class="o">.</span><span class="n">execute_script</span><span class="p">(</span><span class="s2">&quot;arguments[0].value = &#39;2020-07-31&#39;;&quot;</span><span class="p">,</span> <span class="n">end_process_date</span><span class="p">)</span>
+
+
+    <span class="c1">#Time to solve Captcha</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+
+
+    <span class="n">search_button</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_elements_by_id</span><span class="p">(</span><span class="s1">&#39;btnBuscar&#39;</span><span class="p">)</span>
+
+    <span class="c1"># validate captcha search</span>
+    <span class="n">search_button</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+
+    <span class="n">db_connection</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">conect_to_wpsie_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+
+    <span class="n">new_pcp_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">updated_pcp_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">try</span><span class="p">:</span>
+
+        <span class="n">triad_pks</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">get_triad_pks</span><span class="p">(</span><span class="s1">&#39;index_search_result&#39;</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">)</span>
+        <span class="n">procesos_indexed</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">triad_pks</span><span class="p">)</span>
+
+        <span class="c1"># insert new records and update existing ones</span>
+        <span class="k">if</span> <span class="n">procesos_indexed</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;[SWING] </span><span class="si">{}</span><span class="s2"> records found in database, Update Mode&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">procesos_indexed</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;[SWING] Gathering index search results page information...&quot;</span><span class="p">)</span>
+
+            <span class="n">page_table_info_list</span><span class="p">,</span> <span class="n">current_last_item</span><span class="p">,</span> <span class="n">last_item</span> <span class="o">=</span> <span class="n">dextract</span><span class="o">.</span><span class="n">get_main_page_table_info</span><span class="p">(</span>
+                <span class="n">driver</span><span class="p">)</span>
+            <span class="n">pcpe_update_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">new_pcpe_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">pcpe_dict</span> <span class="ow">in</span> <span class="n">page_table_info_list</span><span class="p">:</span>
+
+                <span class="n">extracted_dual_pk</span> <span class="o">=</span> <span class="p">(</span><span class="n">pcpe_dict</span><span class="p">[</span><span class="s1">&#39;Código&#39;</span><span class="p">],</span>
+                                      <span class="n">pcpe_dict</span><span class="p">[</span><span class="s1">&#39;Entidad Contratante&#39;</span><span class="p">])</span>
+
+                <span class="k">if</span> <span class="n">extracted_dual_pk</span> <span class="ow">in</span> <span class="n">triad_pks</span><span class="p">:</span>
+                    <span class="n">pcpe_update_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pcpe_dict</span><span class="p">)</span>
+                    <span class="n">updated_pcp_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_pcpe_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pcpe_dict</span><span class="p">)</span>
+                    <span class="n">new_pcp_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">pass</span>
+
+            <span class="c1"># insert new records</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_pcpe_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">wpsedb</span><span class="o">.</span><span class="n">save_index_search_table</span><span class="p">(</span><span class="n">new_pcpe_list</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">)</span>
+            <span class="c1"># update saved records</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pcpe_update_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">wpsedb</span><span class="o">.</span><span class="n">save_index_search_table</span><span class="p">(</span>
+                    <span class="n">pcpe_update_list</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;update&quot;</span><span class="p">)</span>
+
+            <span class="n">total_pages</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">last_item</span><span class="o">/</span><span class="n">current_last_item</span><span class="p">)</span>
+
+            <span class="n">next_button</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;divProcesos&quot;]/table[2]/tbody/tr[2]/td[3]/a&#39;</span><span class="p">)</span>
+            <span class="n">next_button</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+
+            <span class="k">while</span> <span class="n">current_last_item</span> <span class="o">&lt;</span> <span class="n">last_item</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">page_table_info_list</span><span class="p">,</span> <span class="n">current_last_item</span><span class="p">,</span> <span class="n">last_item</span> <span class="o">=</span> <span class="n">dextract</span><span class="o">.</span><span class="n">get_main_page_table_info</span><span class="p">(</span>
+                        <span class="n">driver</span><span class="p">)</span>
+                    <span class="n">pcpe_update_list</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">new_pcpe_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+                    <span class="k">for</span> <span class="n">pcpe_dict</span> <span class="ow">in</span> <span class="n">page_table_info_list</span><span class="p">:</span>
+
+                        <span class="n">extracted_dual_pk</span> <span class="o">=</span> <span class="p">(</span><span class="n">pcpe_dict</span><span class="p">[</span><span class="s1">&#39;Código&#39;</span><span class="p">],</span>
+                                              <span class="n">pcpe_dict</span><span class="p">[</span><span class="s1">&#39;Entidad Contratante&#39;</span><span class="p">])</span>
+
+                        <span class="k">if</span> <span class="n">extracted_dual_pk</span> <span class="ow">in</span> <span class="n">triad_pks</span><span class="p">:</span>
+                            <span class="n">pcpe_update_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pcpe_dict</span><span class="p">)</span>
+                            <span class="n">updated_pcp_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">new_pcpe_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pcpe_dict</span><span class="p">)</span>
+                            <span class="n">new_pcp_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">pass</span>
+
+                    <span class="c1"># insert new records</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_pcpe_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">wpsedb</span><span class="o">.</span><span class="n">save_index_search_table</span><span class="p">(</span>
+                            <span class="n">new_pcpe_list</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">)</span>
+                    <span class="c1"># update saved records</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pcpe_update_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">wpsedb</span><span class="o">.</span><span class="n">save_index_search_table</span><span class="p">(</span>
+                            <span class="n">pcpe_update_list</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;update&quot;</span><span class="p">)</span>
+
+                    <span class="n">next_button</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;divProcesos&quot;]/table[2]/tbody/tr[2]/td[3]/a&#39;</span><span class="p">)</span>
+                    <span class="n">next_button</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+                    <span class="c1"># test break</span>
+                    <span class="k">if</span> <span class="n">current_last_item</span> <span class="o">==</span> <span class="mi">100</span><span class="p">:</span>
+                        <span class="k">break</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+
+                    <span class="c1"># LOG area</span>
+                    <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[SWING] WECPSIE failed during the gathering of index information. Last element in page processed: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span> <span class="nb">format</span><span class="p">(</span>
+                        <span class="n">current_last_item</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="n">entry_message</span><span class="p">)</span>
+
+                    <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_connection</span><span class="p">,</span> <span class="s1">&#39;[SWING]&#39;</span><span class="p">,</span> <span class="s1">&#39;[SWING]&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;navigation&#39;</span><span class="p">,</span><span class="s1">&#39;nav&#39;</span><span class="p">,</span><span class="n">today</span><span class="p">,</span> <span class="n">entry_message</span><span class="p">)</span>
+                    <span class="c1"># test break</span>
+                    <span class="c1"># if current_last_item == 100:</span>
+                    <span class="c1">#     break</span>
+
+        <span class="c1"># insert all (empty database)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;[SWING] No records found in database, First Run Mode (Insert all)&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;[SWING] Gathering index search results page information...&quot;</span><span class="p">)</span>
+
+            <span class="n">page_table_info_list</span><span class="p">,</span> <span class="n">current_last_item</span><span class="p">,</span> <span class="n">last_item</span> <span class="o">=</span> <span class="n">dextract</span><span class="o">.</span><span class="n">get_main_page_table_info</span><span class="p">(</span><span class="n">driver</span><span class="p">)</span>
+
+            <span class="n">wpsedb</span><span class="o">.</span><span class="n">save_index_search_table</span><span class="p">(</span><span class="n">page_table_info_list</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">)</span>
+
+            <span class="n">total_pages</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">last_item</span><span class="o">/</span><span class="n">current_last_item</span><span class="p">)</span>
+
+
+            <span class="n">next_button</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;divProcesos&quot;]/table[2]/tbody/tr[2]/td[3]/a&#39;</span><span class="p">)</span>
+            <span class="n">next_button</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+
+
+
+            <span class="k">while</span> <span class="n">current_last_item</span> <span class="o">&lt;</span> <span class="n">last_item</span><span class="p">:</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">page_table_info_list</span><span class="p">,</span> <span class="n">current_last_item</span><span class="p">,</span> <span class="n">last_item</span> <span class="o">=</span> <span class="n">dextract</span><span class="o">.</span><span class="n">get_main_page_table_info</span><span class="p">(</span>
+                        <span class="n">driver</span><span class="p">)</span>
+
+                    <span class="n">new_pcp_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">page_table_info_list</span><span class="p">)</span>
+
+                    <span class="n">wpsedb</span><span class="o">.</span><span class="n">save_index_search_table</span><span class="p">(</span>
+                        <span class="n">page_table_info_list</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">current_last_item</span> <span class="o">!=</span> <span class="n">last_item</span><span class="p">:</span>
+                        <span class="n">next_button</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_element_by_xpath</span><span class="p">(</span><span class="s1">&#39;//*[@id=&quot;divProcesos&quot;]/table[2]/tbody/tr[2]/td[3]/a&#39;</span><span class="p">)</span>
+                        <span class="n">next_button</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+                        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+                    <span class="c1"># test break</span>
+                    <span class="c1"># if current_last_item == 100:</span>
+                    <span class="c1">#     break</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+
+                    <span class="c1"># LOG area</span>
+                    <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[SWING] WECPSIE failed during the gathering of index information. Last element in page processed: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span> <span class="nb">format</span><span class="p">(</span>
+                        <span class="n">current_last_item</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="n">entry_message</span><span class="p">)</span>
+                    <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_connection</span><span class="p">,</span> <span class="s1">&#39;[SWING]&#39;</span><span class="p">,</span> <span class="s1">&#39;[SWING]&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;navigation&#39;</span><span class="p">,</span><span class="s1">&#39;nav&#39;</span><span class="p">,</span><span class="n">today</span><span class="p">,</span> <span class="n">entry_message</span><span class="p">)</span>
+
+                    <span class="c1"># # test break</span>
+                    <span class="c1"># if current_last_item &gt; 50:</span>
+                    <span class="c1">#     break</span>
+
+
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_connection</span><span class="p">)</span>
+        <span class="c1"># driver.close()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[SWING] WECPSIE retrieved and saved/updated all basic indexing information from </span><span class="si">{}</span><span class="s2"> procesos de contratación SIE in </span><span class="si">{}</span><span class="s2"> pages&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">last_item</span><span class="p">,</span> <span class="n">total_pages</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Y</span><span class="o">+</span><span class="s2">&quot;[SWING] New PCPSIE added:&quot;</span><span class="p">,</span> <span class="n">new_pcp_count</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Y</span><span class="o">+</span><span class="s2">&quot;[SWING] Updated PCPSIE:&quot;</span><span class="p">,</span> <span class="n">updated_pcp_count</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[SWING] WECPSIE failed during the gathering of search index table information.</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span> <span class="nb">format</span><span class="p">(</span>
+            <span class="n">e</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="n">entry_message</span><span class="p">)</span>
+
+        <span class="c1"># driver.quit()</span>
+        <span class="c1"># LOG zone</span>
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_connection</span><span class="p">,</span> <span class="s1">&#39;[SWING]&#39;</span><span class="p">,</span> <span class="s1">&#39;[SWING]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;navigation&#39;</span><span class="p">,</span> <span class="s1">&#39;nav&#39;</span><span class="p">,</span> <span class="n">today</span><span class="p">,</span>
+                             <span class="n">entry_message</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="crawl_pcpsie_page"><a class="viewcode-back" href="../../index.html#src.st_crawler_wecpsie.crawl_pcpsie_page">[docs]</a><span class="k">def</span> <span class="nf">crawl_pcpsie_page</span><span class="p">(</span><span class="n">pcrawler</span><span class="p">):</span>  <span class="c1"># level 1 navigation</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Navigator for the information shown in page: Información Proceso Contratación.</span>
+
+<span class="sd">    The function handles the navigation and scrapping for the tables Descripción del Proceso de Contratación and Fechas de Control del Proceso.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pcrawler : webdriver instance to perform crawling operations.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Every Proceso de Contratación Pública Subasta Inversa Electronica (PCPSIE) published has this information page.</span>
+
+<span class="sd">    This function does not depend on any user to make any input, since it retrieves the links for each page</span>
+<span class="sd">    directly from the database. The links to every PCPSIE page are saved to the database during the swing_index_pages</span>
+<span class="sd">    function.</span>
+
+<span class="sd">    Any error, warning encountered during the function operations will be logged in WECPSIE database.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from selenium import webdriver</span>
+<span class="sd">    &gt;&gt;&gt; pcrawler = webdriver.Chrome(Driver_PATH)</span>
+<span class="sd">    &gt;&gt;&gt; crawl_pcpsie_pages(pcrawler)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[CRAWL] Fetching PCPSIE links from database...&quot;</span><span class="p">)</span>
+    <span class="n">db_connection</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">conect_to_wpsie_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+
+    <span class="n">p_link_list</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">get_procesos_page_links</span><span class="p">(</span><span class="n">db_connection</span><span class="p">)</span>
+    <span class="n">links_in_plist</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">p_link_list</span><span class="p">)</span>
+
+    <span class="n">triad_pks</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">get_triad_pks</span><span class="p">(</span><span class="s1">&#39;info_sie&#39;</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">)</span>
+
+
+    <span class="k">if</span> <span class="n">links_in_plist</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># p_index = 1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;[CRAWL] SIE Crawler started for </span><span class="si">{}</span><span class="s2"> paginas PCPSIE&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">links_in_plist</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">p_index</span><span class="p">,</span> <span class="n">proceso_link</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">p_link_list</span><span class="p">):</span>
+            <span class="c1"># add one because it starts at 0</span>
+            <span class="n">p_index</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[CRAWL] Crawling process </span><span class="si">{}</span><span class="s2"> of </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">p_index</span><span class="p">,</span> <span class="n">links_in_plist</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;  |--[CRAWL] Opening page for PID:&quot;</span><span class="p">,</span> <span class="n">proceso_link</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">pcrawler</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">proceso_link</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="k">try</span><span class="p">:</span>
+
+                <span class="n">infotable</span> <span class="o">=</span> <span class="n">WebDriverWait</span><span class="p">(</span><span class="n">pcrawler</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">until</span><span class="p">(</span><span class="n">EC</span><span class="o">.</span><span class="n">presence_of_element_located</span><span class="p">((</span><span class="n">By</span><span class="o">.</span><span class="n">ID</span><span class="p">,</span> <span class="s1">&#39;ladoDer&#39;</span><span class="p">)))</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+                <span class="c1"># retrieve tables descripcion del proceso + fechas de control</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;  |--[CRAWL] Gathering information from Descripción del Proceso de Contratación and Fechas de Control&quot;</span><span class="p">)</span>
+
+                <span class="n">sie_dict</span><span class="p">,</span><span class="n">list_autoridades</span><span class="p">,</span> <span class="n">list_comision</span> <span class="o">=</span> <span class="n">dextract</span><span class="o">.</span><span class="n">extract_SIE_lv1</span><span class="p">(</span><span class="n">infotable</span><span class="p">)</span>
+
+                <span class="n">sie_triad_pk</span> <span class="o">=</span> <span class="p">(</span><span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Codigo&#39;</span><span class="p">],</span>
+                                <span class="n">sie_dict</span><span class="p">[</span><span class="s1">&#39;Entidad&#39;</span><span class="p">])</span>
+
+                <span class="n">sie_mode</span> <span class="o">=</span> <span class="s1">&#39;insert&#39;</span> <span class="k">if</span> <span class="n">sie_triad_pk</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">triad_pks</span> <span class="k">else</span> <span class="s1">&#39;update&#39;</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;  |--[CRAWL] Done extracting SIE information!&quot;</span><span class="p">)</span>
+                <span class="n">wpsedb</span><span class="o">.</span><span class="n">save_SIE_info</span><span class="p">(</span><span class="n">sie_dict</span><span class="p">,</span> <span class="n">list_autoridades</span><span class="p">,</span><span class="n">list_comision</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">sie_mode</span><span class="p">)</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;  |--[CRAWL] Closing page for PID:&quot;</span><span class="p">,</span> <span class="n">proceso_link</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[CRAWL] Quit unexpectedly: PID:|</span><span class="si">{}</span><span class="s2">|</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">proceso_link</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">e</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;  |--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">entry_message</span><span class="p">))</span>
+
+                <span class="c1"># LOG zone</span>
+                <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_connection</span><span class="p">,</span> <span class="s1">&#39;[CRAWL1]&#39;</span><span class="p">,</span> <span class="s1">&#39;[CRAWL1]&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;navigation&#39;</span><span class="p">,</span><span class="s1">&#39;crawl&#39;</span><span class="p">,</span><span class="n">today</span><span class="p">,</span> <span class="n">entry_message</span><span class="p">)</span>
+                <span class="c1"># if p_index == 100:</span>
+                <span class="c1">#     # pcrawler.quit()</span>
+                <span class="c1">#     break</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[CRAWL] Crawled and extracted base level of information in PCPSIE, check log for possible errors.&quot;</span><span class="p">)</span>
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_connection</span><span class="p">)</span>
+        <span class="c1">#pcrawler.close()</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">P</span><span class="o">+</span><span class="s2">&quot;[CRAWL] There are not any processes stored in WECPSIE_DB index_table&quot;</span><span class="p">)</span>
+        <span class="c1"># pcrawler.close()</span>
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_connection</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="crawl_pcpsie_contrato_page"><a class="viewcode-back" href="../../index.html#src.st_crawler_wecpsie.crawl_pcpsie_contrato_page">[docs]</a><span class="k">def</span> <span class="nf">crawl_pcpsie_contrato_page</span><span class="p">(</span><span class="n">pcrawler</span><span class="p">):</span>  <span class="c1"># level 2 navigation</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Navigator for the information shown in page: Resumen Información Esencial del Contrato.</span>
+
+<span class="sd">    The function handles the navigation and scrapping for the table Información de Adjudicación.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pcrawler : webdriver instance to perform crawling operations.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Not all the Proceso de Contratación Pública Subasta Inversa Electronica (PCPSIE) published has this information page, it depens of the state of the process</span>
+
+<span class="sd">    This function does not depend on any user to make any input, since it retrieves the links for each page</span>
+<span class="sd">    directly from the database. The links to every PCPSIE page are saved to the database during the crawl_pcpsie_page</span>
+<span class="sd">    function.</span>
+
+<span class="sd">    Any error, warning encountered during the function operations will be logged in WECPSIE database.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from selenium import webdriver</span>
+<span class="sd">    &gt;&gt;&gt; pcrawler = webdriver.Chrome(Driver_PATH)</span>
+<span class="sd">    &gt;&gt;&gt; crawl_pcpsie_contrato_page(pcrawler)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[CRAWL] Fetching PCPSIE_contrato links from database...&quot;</span><span class="p">)</span>
+    <span class="n">db_connection</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">conect_to_wpsie_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+
+    <span class="n">c_link_list</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">get_contrato_links</span><span class="p">(</span><span class="n">db_connection</span><span class="p">)</span>
+    <span class="n">links_in_clist</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">c_link_list</span><span class="p">)</span>
+
+    <span class="n">prev_pks</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">get_triad_pks</span><span class="p">(</span><span class="s1">&#39;info_contrato&#39;</span><span class="p">,</span><span class="n">db_connection</span><span class="p">)</span>
+
+    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">links_in_clist</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># c_index = 1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;[CRAWL] SIE Crawler started for paginas PCPSIE con contrato disponible&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">c_index</span><span class="p">,</span> <span class="n">contrato_link</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">c_link_list</span><span class="p">):</span>
+            <span class="c1"># add one because it starts at 0</span>
+
+
+            <span class="k">if</span> <span class="n">contrato_link</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">c_index</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">C</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[CRAWL] Crawling process </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">counter</span><span class="p">))</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">C</span> <span class="o">+</span> <span class="s2">&quot;  |--[CRAWL] Opening page for PID:&quot;</span><span class="p">,</span> <span class="n">contrato_link</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">pcrawler</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">contrato_link</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+                <span class="k">try</span><span class="p">:</span>
+
+                    <span class="n">infotable</span> <span class="o">=</span> <span class="n">WebDriverWait</span><span class="p">(</span><span class="n">pcrawler</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">until</span><span class="p">(</span><span class="n">EC</span><span class="o">.</span><span class="n">presence_of_element_located</span><span class="p">((</span><span class="n">By</span><span class="o">.</span><span class="n">XPATH</span><span class="p">,</span> <span class="s1">&#39;//*[@id=&quot;frminfoGeneralContrato&quot;]/table&#39;</span><span class="p">)))</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+                    <span class="c1"># retrieve information in table Informacion de Adjudicacion</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;  |--[CRAWL] Gathering information from Informacion de Adjudicacion&quot;</span><span class="p">)</span>
+
+                    <span class="n">contrato_dic</span> <span class="o">=</span> <span class="n">dextract</span><span class="o">.</span><span class="n">extract_SIE_lv2</span><span class="p">(</span><span class="n">infotable</span><span class="p">)</span>
+
+                    <span class="n">sie_triad_pk</span> <span class="o">=</span> <span class="p">(</span><span class="n">contrato_link</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">contrato_link</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+                    <span class="n">sie_mode</span> <span class="o">=</span> <span class="s1">&#39;insert&#39;</span> <span class="k">if</span> <span class="n">sie_triad_pk</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prev_pks</span> <span class="k">else</span> <span class="s1">&#39;update&#39;</span>
+
+                    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;  |--[CRAWL] Done extracting contract SIE information!&quot;</span><span class="p">)</span>
+
+                    <span class="n">wpsedb</span><span class="o">.</span><span class="n">save_contract_SIE_info</span><span class="p">(</span><span class="n">contrato_link</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">contrato_link</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">contrato_dic</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">sie_mode</span><span class="p">)</span>
+
+                    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;  |--[CRAWL] Closing page for PID:&quot;</span><span class="p">,</span> <span class="n">contrato_link</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+                    <span class="k">if</span> <span class="n">c_index</span> <span class="o">==</span> <span class="mi">100</span><span class="p">:</span>
+                        <span class="n">pcrawler</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                        <span class="k">break</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[CRAWL] Quit unexpectedly: PID:|</span><span class="si">{}</span><span class="s2">|</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">contrato_link</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">e</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;  |--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">entry_message</span><span class="p">))</span>
+
+                    <span class="c1"># LOG zone</span>
+                    <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_connection</span><span class="p">,</span> <span class="s1">&#39;[CRAWL2]&#39;</span><span class="p">,</span> <span class="s1">&#39;[CRAWL2]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;navigation&#39;</span><span class="p">,</span> <span class="s1">&#39;crawl&#39;</span><span class="p">,</span>
+                                         <span class="n">today</span><span class="p">,</span> <span class="n">entry_message</span><span class="p">)</span>
+                    <span class="c1"># if c_index == 100:</span>
+                    <span class="c1">#     # pcrawler.quit()</span>
+                    <span class="c1">#     break</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[CRAWL] Crawled and extracted base level  2 of information in PCPSIE, check log for possible errors.&quot;</span><span class="p">)</span>
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_connection</span><span class="p">)</span>
+        <span class="n">pcrawler</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">P</span><span class="o">+</span><span class="s2">&quot;[CRAWL] There are not any processes stored in WECPSIE_DB info_sie&quot;</span><span class="p">)</span>
+        <span class="c1"># pcrawler.close()</span>
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_connection</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="crawl_pcpsie_invitacion_page"><a class="viewcode-back" href="../../index.html#src.st_crawler_wecpsie.crawl_pcpsie_invitacion_page">[docs]</a><span class="k">def</span> <span class="nf">crawl_pcpsie_invitacion_page</span><span class="p">(</span><span class="n">pcrawler</span><span class="p">):</span>  <span class="c1"># level 2 navigation</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Navigator for the information shown in page: Invitaciones a proveedores.</span>
+
+<span class="sd">    The function handles the navigation and scrapping for the table Invitaciones a proveedores.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pcrawler : webdriver instance to perform crawling operations.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    all the Proceso de Contratación Pública Subasta Inversa Electronica (PCPSIE) published has this information page, but</span>
+<span class="sd">    in some cases there are no invited companies</span>
+
+<span class="sd">    This function does not depend on any user to make any input, since it retrieves the links for each page</span>
+<span class="sd">    directly from the database. The links to every PCPSIE page are saved to the database during the crawl_pcpsie_page</span>
+<span class="sd">    function.</span>
+
+<span class="sd">    Any error, warning encountered during the function operations will be logged in WECPSIE database.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from selenium import webdriver</span>
+<span class="sd">    &gt;&gt;&gt; pcrawler = webdriver.Chrome(Driver_PATH)</span>
+<span class="sd">    &gt;&gt;&gt; crawl_pcpsie_invitacion_page(pcrawler)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[CRAWL] Fetching PCPSIE_invitaciones links from database...&quot;</span><span class="p">)</span>
+    <span class="n">db_connection</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">conect_to_wpsie_db</span><span class="p">([</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;wecpsie&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;dontara99&#39;</span><span class="p">])</span>
+
+    <span class="n">iv_link_list</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">get_invitacion_links</span><span class="p">(</span><span class="n">db_connection</span><span class="p">)</span>
+    <span class="n">links_in_ivlist</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">iv_link_list</span><span class="p">)</span>
+
+    <span class="n">prev_pks</span> <span class="o">=</span> <span class="n">wpsedb</span><span class="o">.</span><span class="n">get_triad_pks</span><span class="p">(</span><span class="s1">&#39;invitaciones&#39;</span><span class="p">,</span><span class="n">db_connection</span><span class="p">)</span>
+
+    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">links_in_ivlist</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># iv_index = 1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;[CRAWL] SIE Crawler started for paginas PCPSIE con lista de invitados disponible&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">iv_index</span><span class="p">,</span> <span class="n">invitacion_link</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">iv_link_list</span><span class="p">):</span>
+            <span class="c1"># add one because it starts at 0</span>
+            <span class="k">if</span> <span class="n">invitacion_link</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">iv_index</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">C</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[CRAWL] Crawling process </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">counter</span><span class="p">))</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">C</span> <span class="o">+</span> <span class="s2">&quot;  |--[CRAWL] Opening page for PID:&quot;</span><span class="p">,</span> <span class="n">invitacion_link</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">pcrawler</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">invitacion_link</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+                <span class="k">try</span><span class="p">:</span>
+
+                    <span class="n">infotable</span> <span class="o">=</span> <span class="n">WebDriverWait</span><span class="p">(</span><span class="n">pcrawler</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">until</span><span class="p">(</span><span class="n">EC</span><span class="o">.</span><span class="n">presence_of_element_located</span><span class="p">((</span><span class="n">By</span><span class="o">.</span><span class="n">XPATH</span><span class="p">,</span> <span class="s1">&#39;//*[@id=&quot;formPaginas&quot;]/table&#39;</span><span class="p">)))</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+                    <span class="c1"># retrieve information in table Invitacion a proveedores</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">+</span><span class="s2">&quot;  |--[CRAWL] Gathering information from Invitacion a proveedores&quot;</span><span class="p">)</span>
+
+                    <span class="n">invitacion_list</span> <span class="o">=</span> <span class="n">dextract</span><span class="o">.</span><span class="n">extract_SIE_lv2_inv</span><span class="p">(</span><span class="n">infotable</span><span class="p">,</span><span class="n">pcrawler</span><span class="p">)</span>
+
+                    <span class="n">sie_triad_pk</span> <span class="o">=</span> <span class="p">(</span><span class="n">invitacion_link</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">invitacion_link</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+                    <span class="n">sie_mode</span> <span class="o">=</span> <span class="s1">&#39;insert&#39;</span> <span class="k">if</span> <span class="n">sie_triad_pk</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prev_pks</span> <span class="k">else</span> <span class="s1">&#39;update&#39;</span>
+
+                    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;  |--[CRAWL] Done extracting invitacion SIE information!&quot;</span><span class="p">)</span>
+
+                    <span class="n">wpsedb</span><span class="o">.</span><span class="n">save_invitation_SIE_info</span><span class="p">(</span><span class="n">invitacion_link</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">invitacion_link</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">invitacion_list</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">sie_mode</span><span class="p">)</span>
+
+                    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;  |--[CRAWL] Closing process for PID:&quot;</span><span class="p">,</span> <span class="n">invitacion_link</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+                    <span class="k">if</span> <span class="n">iv_index</span> <span class="o">==</span> <span class="mi">100</span><span class="p">:</span>
+                        <span class="n">pcrawler</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                        <span class="k">break</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">entry_message</span> <span class="o">=</span> <span class="s2">&quot;[CRAWL] Quit unexpectedly: PID:|</span><span class="si">{}</span><span class="s2">|</span><span class="se">\n</span><span class="s2">Error message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">invitacion_link</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;No existen invitaciones disponibles&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">R</span><span class="o">+</span><span class="s2">&quot;  |--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">entry_message</span><span class="p">))</span>
+
+                    <span class="c1"># LOG zone</span>
+                    <span class="n">wpsedb</span><span class="o">.</span><span class="n">add_entry_log</span><span class="p">(</span><span class="n">db_connection</span><span class="p">,</span> <span class="s1">&#39;[CRAWL2]&#39;</span><span class="p">,</span> <span class="s1">&#39;[CRAWL2]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;navigation&#39;</span><span class="p">,</span> <span class="s1">&#39;crawl&#39;</span><span class="p">,</span>
+                                         <span class="n">today</span><span class="p">,</span> <span class="n">entry_message</span><span class="p">)</span>
+                    <span class="c1"># if c_index == 100:</span>
+                    <span class="c1">#     # pcrawler.quit()</span>
+                    <span class="c1">#     break</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">+</span><span class="s2">&quot;[CRAWL] Crawled and extracted base level  2 of information in PCPSIE, check log for possible errors.&quot;</span><span class="p">)</span>
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_connection</span><span class="p">)</span>
+        <span class="n">pcrawler</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">P</span><span class="o">+</span><span class="s2">&quot;[CRAWL] There are not any processes stored in WECPSIE_DB info_sie&quot;</span><span class="p">)</span>
+        <span class="c1"># pcrawler.close()</span>
+        <span class="n">wpsedb</span><span class="o">.</span><span class="n">disconnect_db</span><span class="p">(</span><span class="n">db_connection</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># main program</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">|----------------------------------------&lt;&lt;WECPSIE - WEB CRAWLER&gt;&gt;-----------------------------------&quot;</span><span class="p">)</span>
+
+    <span class="n">driver</span> <span class="o">=</span> <span class="n">webdriver</span><span class="o">.</span><span class="n">Chrome</span><span class="p">(</span><span class="n">dutils</span><span class="o">.</span><span class="n">GDriver_PATH</span><span class="p">)</span>
+    <span class="c1"># swing_index_pages(driver)</span>
+    <span class="c1"># crawl_pcpsie_page(driver)</span>
+    <span class="c1"># crawl_pcpsie_contrato_page(driver)</span>
+    <span class="n">crawl_pcpsie_invitacion_page</span><span class="p">(</span><span class="n">driver</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Sebastian Taraguay.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
